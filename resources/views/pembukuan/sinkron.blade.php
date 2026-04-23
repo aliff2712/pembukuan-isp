@@ -1,0 +1,555 @@
+@extends('layouts-main.app')
+@section('title', 'Sinkron Data Billing')
+
+@section('content')
+
+<style>
+body {
+    background: #0f172a;
+}
+
+.summary-card {
+    background: #1e293b;
+    border-radius: 18px;
+    padding: 24px;
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow:
+        0 10px 25px rgba(0,0,0,0.35),
+        0 2px 6px rgba(0,0,0,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+    transition: all .25s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+        0 18px 35px rgba(0,0,0,0.45),
+        0 4px 10px rgba(0,0,0,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.summary-card small {
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.summary-number {
+    font-size: 30px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.filter-card {
+    background: #1e293b;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow:
+        0 10px 25px rgba(0,0,0,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.filter-card .form-label {
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.filter-card .form-control,
+.filter-card .form-select {
+    background: #0f172a;
+    border: 1px solid #0f172a;
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 9px 14px;
+    transition: all .2s ease;
+}
+
+.filter-card .form-control::placeholder {
+    color: #94a3b8;
+}
+
+.filter-card .form-control:focus,
+.filter-card .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.25);
+    background: #0f172a;
+    color: #fff;
+}
+
+.filter-card .form-select option {
+    background: #1e293b;
+    color: #fff;
+}
+
+.btn-navy {
+    background: #2563eb;
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 600;
+}
+
+.btn-navy:hover {
+    background: #1d4ed8;
+    color: #fff;
+}
+
+.btn-outline-secondary-navy {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.btn-outline-secondary-navy:hover {
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+}
+
+.table thead th {
+    background: #1e3a5f;
+    color: #fff;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    border: none;
+    padding: 14px 16px;
+}
+
+.table tbody td {
+    padding: 14px 16px;
+    font-size: 14px;
+    color: #e2e8f0;
+    border-color: rgba(255,255,255,0.06);
+}
+
+.table-hover tbody tr {
+    transition: all .2s ease-in-out;
+}
+
+.table-hover tbody tr:hover {
+    background: rgba(59, 130, 246, 0.06);
+    transform: scale(1.002);
+}
+
+.badge-paid {
+    background: #22c55e;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+}
+
+.badge-cash {
+    background: #f59e0b;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+}
+
+.badge-online {
+    background: #3b82f6;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+}
+
+.admin-badge {
+    background: #1e3a5f;
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 14px;
+    padding: 10px 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: all .2s ease;
+}
+
+.admin-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+
+.admin-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #2563eb;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.admin-name {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.admin-count {
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.admin-nominal {
+    color: #60a5fa;
+    font-weight: 700;
+    font-size: 13px;
+    border-left: 1px solid rgba(255,255,255,0.1);
+    padding-left: 10px;
+    margin-left: 4px;
+}
+
+.alert-success-navy {
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: #86efac;
+    border-radius: 12px;
+    padding: 12px 16px;
+}
+
+.alert-error-navy {
+    background: rgba(220, 38, 38, 0.15);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    color: #fca5a5;
+    border-radius: 12px;
+    padding: 12px 16px;
+}
+
+.filter-active-badge {
+    background: rgba(59,130,246,0.15);
+    border: 1px solid rgba(59,130,246,0.4);
+    color: #93c5fd;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+}
+
+.filter-active-badge a {
+    color: #f87171;
+    text-decoration: none;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.filter-active-badge a:hover {
+    color: #ef4444;
+}
+</style>
+
+{{-- HEADER --}}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h3 class="m-0 font-weight-bold text-white">
+            Sinkron Data Billing
+        </h3>
+    </div>
+</div>
+
+{{-- NOTIFIKASI --}}
+@if(session('success'))
+    <div class="alert-success-navy mb-4">
+        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="alert-error-navy mb-4">
+        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+    </div>
+@endif
+
+{{-- SUMMARY --}}
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="summary-card text-center">
+            <small>Total Transaksi Tersimpan</small>
+            <div class="summary-number">{{ $totalTransaksi }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="summary-card text-center">
+            <small>Total Nominal</small>
+            <div class="summary-number">
+                Rp {{ number_format($totalNominal, 0, ',', '.') }}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="summary-card text-center">
+            <small>Total Admin Penagih</small>
+            <div class="summary-number">{{ $perAdmin->count() }}</div>
+        </div>
+    </div>
+</div>
+
+{{-- REKAP PER ADMIN --}}
+@if(isset($perAdmin) && $perAdmin->count() > 0)
+<div class="mb-4">
+    <p class="text-white fw-semibold mb-3">Rekap Per Admin</p>
+    <div class="d-flex flex-wrap gap-3">
+        @foreach($perAdmin as $admin)
+            @php $inisial = strtoupper(substr($admin->dibayar_oleh ?? 'U', 0, 1)); @endphp
+            <div class="admin-badge">
+                <div class="admin-avatar">{{ $inisial }}</div>
+                <div class="d-flex flex-column">
+                    <span class="admin-name">{{ $admin->dibayar_oleh ?? 'Unknown' }}</span>
+                    <span class="admin-count">{{ $admin->jumlah_transaksi }} transaksi</span>
+                </div>
+                <span class="admin-nominal">Rp {{ number_format($admin->total_nominal, 0, ',', '.') }}</span>
+            </div>
+        @endforeach
+    </div>
+</div>
+@endif
+
+{{-- FORM FILTER --}}
+<div class="card filter-card mb-3">
+    <div class="card-body">
+        <form method="GET" action="{{ route('sinkron.index') }}">
+            <div class="row g-3 align-items-end">
+
+                {{-- Search --}}
+                <div class="col-md-3">
+                    <label class="form-label"><b>Cari Nama / Kode</b></label>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                        class="form-control" placeholder="Nama pelanggan / kode...">
+                </div>
+
+                {{-- Bulan Tagihan --}}
+                <div class="col-md-2">
+                    <label class="form-label"><b>Bulan Tagihan</b></label>
+                    <input type="month" name="bulan_filter" value="{{ request('bulan_filter') }}"
+                        class="form-control">
+                </div>
+
+                {{-- Area --}}
+                <div class="col-md-2">
+                    <label class="form-label"><b>Area</b></label>
+                    <select name="area" class="form-control">
+                        <option value="">Semua Area</option>
+                        @foreach($areaList as $area)
+                            <option value="{{ $area }}" {{ request('area') == $area ? 'selected' : '' }}>
+                                {{ $area }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Metode --}}
+                <div class="col-md-2">
+                    <label class="form-label"><b>Metode</b></label>
+                    <select name="metode" class="form-control">
+                        <option value="">Semua Metode</option>
+                        @foreach($metodeList as $metode)
+                            <option value="{{ $metode }}" {{ request('metode') == $metode ? 'selected' : '' }}>
+                                {{ strtoupper($metode) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Admin --}}
+                <div class="col-md-2">
+                    <label class="form-label"><b>Admin</b></label>
+                    <select name="dibayar_oleh" class="form-control">
+                        <option value="">Semua Admin</option>
+                        @foreach($adminList as $adm)
+                            <option value="{{ $adm }}" {{ request('dibayar_oleh') == $adm ? 'selected' : '' }}>
+                                {{ $adm }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Tombol --}}
+                <div class="col-md-1 d-flex gap-2">
+                    <button type="submit" class="btn btn-navy px-3 w-100">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+
+            </div>
+        </form>
+
+        {{-- Filter Aktif --}}
+        @php
+            $activeFilters = array_filter([
+                'search'       => request('search'),
+                'bulan_filter' => request('bulan_filter'),
+                'area'         => request('area'),
+                'metode'       => request('metode'),
+                'dibayar_oleh' => request('dibayar_oleh'),
+            ]);
+        @endphp
+
+        @if(count($activeFilters) > 0)
+        <div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
+            <small class="text-muted me-1">Filter aktif:</small>
+            @foreach($activeFilters as $key => $val)
+                @php
+                    $label = match($key) {
+                        'search'       => 'Cari',
+                        'bulan_filter' => 'Bulan',
+                        'area'         => 'Area',
+                        'metode'       => 'Metode',
+                        'dibayar_oleh' => 'Admin',
+                        default        => $key,
+                    };
+                    $removeUrl = request()->fullUrlWithQuery([$key => null]);
+                @endphp
+                <span class="filter-active-badge">
+                    {{ $label }}: <b>{{ strtoupper($val) }}</b>
+                    <a href="{{ $removeUrl }}" title="Hapus filter ini">&times;</a>
+                </span>
+            @endforeach
+
+            <a href="{{ route('sinkron.index') }}" class="filter-active-badge"
+               style="background:rgba(220,38,38,0.1);border-color:rgba(220,38,38,0.3);color:#fca5a5;">
+                <i class="fas fa-times me-1"></i> Reset Semua
+            </a>
+        </div>
+        @endif
+
+    </div>
+</div>
+
+{{-- FORM IMPORT --}}
+<div class="card filter-card mb-4">
+    <div class="card-body">
+        <form method="POST" action="{{ route('sinkron.import') }}">
+            @csrf
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label"><b>Pilih Bulan Import</b></label>
+                    <input type="month" name="bulan" value="{{ now()->format('Y-m') }}"
+                        class="form-control">
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-navy px-4">
+                        <i class="fas fa-file-import me-1"></i> Import Sekarang
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- FORM DELETE --}}
+<div class="card filter-card mb-4">
+    <div class="card-body">
+        <form method="POST" action="{{ route('sinkron.deleteTransaksi') }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus semua data transaksi untuk bulan ini? Data yang sudah dijurnal tidak akan dihapus.')">
+            @csrf
+            @method('DELETE')
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label"><b>Pilih Bulan Hapus</b></label>
+                    <input type="month" name="bulan" value="{{ now()->format('Y-m') }}"
+                        class="form-control" required>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="fas fa-trash me-1"></i> Hapus Data Bulan Ini
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="card modern-card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle table-dark table-bordered">
+                <thead>
+                    <tr>
+                        <th>Nama Pelanggan</th>
+                        <th>Area</th>
+                        <th>Paket</th>
+                        <th class="text-end">Jumlah</th>
+                        <th>Metode</th>
+                        <th>Dibayar Oleh</th>
+                        <th>Bulan Tagihan</th>
+                        <th>Tanggal Bayar</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($transaksi as $trx)
+                    <tr>
+                        <td class="fw-semibold text-white">{{ $trx->nama_pelanggan }}</td>
+                        <td>{{ $trx->area ?? '-' }}</td>
+                        <td>{{ $trx->paket ?? '-' }}</td>
+                        <td class="text-end fw-bold text-white">
+                            Rp {{ number_format($trx->jumlah, 0, ',', '.') }}
+                        </td>
+                        <td>
+                            @if(strtolower($trx->metode) === 'cash')
+                                <span class="badge badge-cash">CASH</span>
+                            @else
+                                <span class="badge badge-online">{{ strtoupper($trx->metode ?? '-') }}</span>
+                            @endif
+                        </td>
+                        <td>{{ $trx->dibayar_oleh ?? '-' }}</td>
+                        <td>
+                            {{ $trx->bulan_tagihan
+                                ? \Carbon\Carbon::parse($trx->bulan_tagihan)->translatedFormat('F Y')
+                                : '-' }}
+                        </td>
+                        <td>
+                            {{ $trx->tanggal_bayar
+                                ? \Carbon\Carbon::parse($trx->tanggal_bayar)->format('d M Y H:i')
+                                : '-' }}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge badge-paid">
+                                <i class="far fa-smile me-1"></i> LUNAS
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <form method="POST" action="{{ route('sinkron.deleteTransaksiById', $trx->id) }}" class="d-inline" onsubmit="return confirm('Hapus transaksi {{ $trx->nama_pelanggan }}?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-danger" title="Hapus record ini">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-white">
+                            Belum ada data. Silakan import atau ubah filter.
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {{-- PAGINATION --}}
+    @if($transaksi->hasPages())
+    <div class="card-footer bg-dark">
+        {{ $transaksi->links('pagination::bootstrap-5') }}
+    </div>
+    @endif
+</div>
+
+@endsection

@@ -1,0 +1,32 @@
+[30-Mar-2026 06:32:56 UTC] PHP Warning:  require(/home/cssorid/pembukuan.css.or.id/vendor/composer/../../app/Helpers/helpers.php): Failed to open stream: No such file or directory in /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php on line 55
+[30-Mar-2026 06:32:56 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cssorid/pembukuan.css.or.id/vendor/composer/../../app/Helpers/helpers.php' (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php:55
+Stack trace:
+#0 /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php(38): composerRequireba68c4dab46767af922da7ab0c0dea92()
+#1 /home/cssorid/pembukuan.css.or.id/vendor/autoload.php(12): ComposerAutoloaderInitba68c4dab46767af922da7ab0c0dea92::getLoader()
+#2 /home/cssorid/pembukuan.css.or.id/public/index.php(13): require('/home/cssorid/p...')
+#3 {main}
+  thrown in /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php on line 55
+[30-Mar-2026 06:34:11 UTC] PHP Warning:  require(/home/cssorid/pembukuan.css.or.id/vendor/composer/../../app/Helpers/helpers.php): Failed to open stream: No such file or directory in /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php on line 55
+[30-Mar-2026 06:34:11 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cssorid/pembukuan.css.or.id/vendor/composer/../../app/Helpers/helpers.php' (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php:55
+Stack trace:
+#0 /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php(38): composerRequireba68c4dab46767af922da7ab0c0dea92()
+#1 /home/cssorid/pembukuan.css.or.id/vendor/autoload.php(12): ComposerAutoloaderInitba68c4dab46767af922da7ab0c0dea92::getLoader()
+#2 /home/cssorid/pembukuan.css.or.id/public/index.php(13): require('/home/cssorid/p...')
+#3 {main}
+  thrown in /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php on line 55
+[30-Mar-2026 06:34:49 UTC] PHP Warning:  require(/home/cssorid/pembukuan.css.or.id/vendor/composer/../../app/Helpers/helpers.php): Failed to open stream: No such file or directory in /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php on line 55
+[30-Mar-2026 06:34:49 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cssorid/pembukuan.css.or.id/vendor/composer/../../app/Helpers/helpers.php' (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php:55
+Stack trace:
+#0 /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php(38): composerRequireba68c4dab46767af922da7ab0c0dea92()
+#1 /home/cssorid/pembukuan.css.or.id/vendor/autoload.php(12): ComposerAutoloaderInitba68c4dab46767af922da7ab0c0dea92::getLoader()
+#2 /home/cssorid/pembukuan.css.or.id/public/index.php(13): require('/home/cssorid/p...')
+#3 {main}
+  thrown in /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php on line 55
+[18-Apr-2026 14:32:03 Asia/Jakarta] PHP Fatal error:  Trait "App\Http\Controllers\App\Models\SinkronPelanggan" not found in /home/cssorid/pembukuan.css.or.id/app/Http/Controllers/SinkronImportController.php on line 11
+[18-Apr-2026 14:33:08 Asia/Jakarta] PHP Fatal error:  Trait "App\Http\Controllers\App\Models\SinkronPelanggan" not found in /home/cssorid/pembukuan.css.or.id/app/Http/Controllers/SinkronImportController.php on line 11
+[18-Apr-2026 14:33:59 Asia/Jakarta] PHP Fatal error:  Trait "App\Http\Controllers\App\Models\SinkronPelanggan" not found in /home/cssorid/pembukuan.css.or.id/app/Http/Controllers/SinkronImportController.php on line 9
+[18-Apr-2026 14:34:52 Asia/Jakarta] PHP Fatal error:  Trait "App\Http\Controllers\App\Models\SinkronPelanggan" not found in /home/cssorid/pembukuan.css.or.id/app/Http/Controllers/SinkronImportController.php on line 9
+[18-Apr-2026 14:35:44 Asia/Jakarta] PHP Fatal error:  Trait "App\Http\Controllers\App\Models\SinkronPelanggan" not found in /home/cssorid/pembukuan.css.or.id/app/Http/Controllers/SinkronImportController.php on line 9
+[18-Apr-2026 14:35:46 Asia/Jakarta] PHP Fatal error:  Trait "App\Http\Controllers\App\Models\SinkronPelanggan" not found in /home/cssorid/pembukuan.css.or.id/app/Http/Controllers/SinkronImportController.php on line 9
+[18-Apr-2026 14:35:46 Asia/Jakarta] PHP Fatal error:  Trait "App\Http\Controllers\App\Models\SinkronPelanggan" not found in /home/cssorid/pembukuan.css.or.id/app/Http/Controllers/SinkronImportController.php on line 9
+[18-Apr-2026 14:35:46 Asia/Jakarta] PHP Fatal error:  Trait "App\Http\Controllers\App\Models\SinkronPelanggan" not found in /home/cssorid/pembukuan.css.or.id/app/Http/Controllers/SinkronImportController.php on line 9

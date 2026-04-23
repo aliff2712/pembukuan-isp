@@ -1,0 +1,215 @@
+/* =========================
+   NAVY GLOBAL THEME
+========================= */
+
+.card-header {
+    background-color: #0f172a !important;
+    color: #fff !important;
+}
+
+.card-header h6 {
+    color: #fff !important;
+}
+
+.navbar,
+.topbar {
+    background-color: #0f172a !important;
+}
+
+.navbar .nav-link,
+.navbar-brand {
+    color: #fff !important;
+}
+
+.btn-primary {
+    background-color: #1c54d9;
+    border-color: #1c54d9;
+}
+
+.btn-primary:hover {
+    background-color: #164faa;
+    border-color: #164faa;
+}
+
+/* =========================
+   MOBILE FIX (STABLE)
+========================= */
+
+@media (max-width: 768px) {
+
+    /* ===== Summary Card ===== */
+    .card {
+        border-radius: 14px;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    /* ===== Header Buttons Stack ===== */
+    .card-header .btn {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .card-header .d-flex {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px;
+    }
+
+    /* ===== Filter Form Stack ===== */
+    form .col-md-3,
+    form .col-md-2 {
+        width: 100%;
+        margin-bottom: 12px;
+    }
+    
+    form button,
+    form a {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    /* ===== TABLE SCROLL FIX ===== */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        min-width: 700px;
+    }
+
+    /* ===== Pagination Stack ===== */
+    .d-flex.justify-content-between {
+        flex-direction: column !important;
+        text-align: center;
+        gap: 10px;
+    }
+}
+.text-primary-white{
+    color: #fff !important;
+}
+/* MODAL */
+#exportModal .modal-content{
+    border-radius:14px;
+    border:none;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+
+/* TITLE */
+#exportModal h5{
+    color:#0b2a4a;
+    font-weight:600;
+}
+
+/* SPINNER */
+.spinner-border{
+    color:#0b2a4a;
+}
+
+/* PROGRESS CONTAINER */
+.progress{
+    height:22px;
+    border-radius:30px;
+    background:#e9edf2;
+}
+
+/* PROGRESS BAR CERAH */
+.progress-bar{
+    background:linear-gradient(90deg,#38bdf8,#0ea5e9);
+    font-weight:600;
+    font-size:13px;
+}
+
+/* TEXT */
+#progressText{
+    font-size:14px;
+    color:#0b2a4a;
+}
+/* ===============================
+   SWEETALERT NAVY THEME
+=================================*/
+
+.swal2-popup {
+    background: #1e293b !important;
+    color: #e2e8f0 !important;
+    border-radius: 16px !important;
+    padding: 22px !important;
+}
+
+.swal2-title {
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+.swal2-html-container {
+    color: #cbd5e1 !important;
+}
+
+/* BUTTON */
+.swal2-confirm {
+    border-radius: 10px !important;
+    padding: 10px 18px !important;
+    font-weight: 600;
+}
+
+.swal2-cancel {
+    border-radius: 10px !important;
+}
+
+/* MOBILE FIX */
+@media (max-width: 576px) {
+
+    .swal2-popup {
+        width: 92% !important;
+        font-size: 14px;
+        padding: 18px !important;
+    }
+
+    .swal2-title {
+        font-size: 18px;
+    }
+
+    .swal2-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .swal2-actions button {
+        width: 100%;
+    }
+
+}
+/* =========================
+   FILTER NAVY INPUT
+========================= */
+
+.filter-card .form-control,
+.filter-card select {
+    background: #0f172a !important;
+    border: 1px solid #334155 !important;
+    color: #ffffff !important;
+    border-radius: 10px;
+}
+
+/* focus */
+.filter-card .form-control:focus,
+.filter-card select:focus{
+    background: #0f172a !important;
+    color: #ffffff !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.25);
+}
+
+/* dropdown option */
+.filter-card select option{
+    background:#0f172a;
+    color:#fff;
+}
+
+/* icon kalender */
+.filter-card input[type="date"]::-webkit-calendar-picker-indicator{
+    filter: invert(1);
+}

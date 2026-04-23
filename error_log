@@ -1,0 +1,8 @@
+[30-Mar-2026 06:46:18 UTC] PHP Warning:  require(/home/cssorid/pembukuan.css.or.id/vendor/composer/../../app/Helpers/helpers.php): Failed to open stream: No such file or directory in /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php on line 55
+[30-Mar-2026 06:46:18 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/cssorid/pembukuan.css.or.id/vendor/composer/../../app/Helpers/helpers.php' (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php:55
+Stack trace:
+#0 /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php(38): composerRequireba68c4dab46767af922da7ab0c0dea92()
+#1 /home/cssorid/pembukuan.css.or.id/vendor/autoload.php(12): ComposerAutoloaderInitba68c4dab46767af922da7ab0c0dea92::getLoader()
+#2 /home/cssorid/pembukuan.css.or.id/artisan(9): require('/home/cssorid/p...')
+#3 {main}
+  thrown in /home/cssorid/pembukuan.css.or.id/vendor/composer/autoload_real.php on line 55

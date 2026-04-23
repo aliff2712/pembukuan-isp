@@ -1,0 +1,162 @@
+/* =============================================================
+   dashboard.css
+   Style khusus halaman Dashboard Keuangan
+   ============================================================= */
+
+
+/* -------------------------------------------------------------
+   TEMA KARTU — Background Variants
+   ------------------------------------------------------------- */
+
+/* Abu Gelap Modern */
+.bg-success-grey {
+    background-color: #2f3542 !important;
+}
+
+.bg-success-grey .text-primary {
+    color: #4dabf7 !important;
+}
+
+/* Hijau Gelap */
+.bg-success-dark {
+    background: #14532d;
+    transition: background 0.2s ease;
+}
+
+.bg-success-dark:hover {
+    background: #166534;
+}
+
+/* Biru Gelap */
+.bg-dark-blue {
+    background: #1e3a8a;
+    transition: background 0.2s ease;
+}
+
+.bg-dark-blue:hover {
+    background: #1e40af;
+}
+
+/* Orange Gelap */
+.bg-orange-soft {
+    background: linear-gradient(135deg, #7c2d12, #c2410c);
+    color: white;
+}
+
+/* Merah Gelap */
+.bg-darkred-soft {
+    background: linear-gradient(135deg, #450a0a, #7f1d1d);
+    color: white;
+}
+
+/* Kuning Tua / Dark Gold */
+.card-warning-dark {
+    background-color: #3b2f0f;
+    color: #ffffff;
+}
+
+.card-warning-dark .text-warning  { color: #f1c40f !important; }
+.card-warning-dark .text-gray-800 { color: #ffffff !important; }
+.card-warning-dark .text-muted    { color: rgba(255, 255, 255, 0.7) !important; }
+.card-warning-dark .text-success  { color: #2ecc71 !important; }
+.card-warning-dark .fa-dollar-sign { color: rgba(255, 255, 255, 0.3) !important; }
+
+/* Cream */
+.card-cream {
+    background-color: #f8f5ef;
+    border-radius: 12px;
+}
+
+.card-cream .text-gray-800 { color: #2c3e50 !important; }
+.card-cream .text-muted    { color: #7f8c8d !important; }
+.card-cream .fa-chart-line { color: rgba(0, 0, 0, 0.15) !important; }
+
+
+/* -------------------------------------------------------------
+   BORDER LEFT VARIANTS
+   ------------------------------------------------------------- */
+
+.border-left-orange  { border-left: 4px solid #c2410c !important; }
+.border-left-darkred { border-left: 4px solid #7f1d1d !important; }
+.border-left-warning { border-left: 5px solid #b8860b !important; }
+
+
+/* -------------------------------------------------------------
+   TEXT & ICON COLOR VARIANTS
+   ------------------------------------------------------------- */
+
+.text-orange  { color: #c2410c !important; }
+.text-darkred { color: #b91c1c !important; }
+
+.icon-orange  { color: rgba(194, 65, 12, 0.25); }
+.icon-darkred { color: rgba(127, 29, 29, 0.25); }
+
+
+/* -------------------------------------------------------------
+   ICON CIRCLE (dalam card)
+   ------------------------------------------------------------- */
+
+.icon-circle {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 12px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* -------------------------------------------------------------
+   QUICK ACTIONS
+   ------------------------------------------------------------- */
+
+.card-clean {
+    border-radius: 14px;
+}
+
+.card-clean .card-header {
+    background: #f8f9fa;
+    border-bottom: none;
+    font-weight: 600;
+}
+
+.quick-link {
+    border: none;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    transition: all 0.2s ease;
+}
+
+.quick-link:hover {
+    background: #f1f5f9;
+    transform: translateX(4px);
+}
+
+.quick-link i {
+    width: 22px;
+}
+
+
+/* -------------------------------------------------------------
+   STATISTIK CEPAT
+   ------------------------------------------------------------- */
+
+.stat-item {
+    margin-bottom: 20px;
+}
+
+.stat-item h4 {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.progress {
+    height: 8px;
+    border-radius: 10px;
+    background: #e5e7eb;
+}
+
+.progress-bar {
+    border-radius: 10px;
+}

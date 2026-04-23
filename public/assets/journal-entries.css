@@ -1,0 +1,304 @@
+.btn-navy{
+    background: #0b2a4a;
+    color: #ffffff;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all .25s ease;
+}
+
+/* hover */
+.btn-navy:hover{
+    background: #133a63;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+}
+
+/* klik */
+.btn-navy:active{
+    transform: scale(.97);
+}
+/* ===============================
+   PAGE HEADER
+=================================*/
+
+.page-title{
+    font-size:22px;
+    font-weight:700;
+    color:#0f172a;
+}
+
+/* ===============================
+   STAT CARDS
+=================================*/
+
+.stat-card{
+    border:none;
+    border-radius:14px;
+    padding:18px;
+    transition:all .2s ease;
+}
+
+.stat-card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 8px 25px rgba(0,0,0,0.08);
+}
+
+.stat-card .stat-title{
+    font-size:11px;
+    text-transform:uppercase;
+    font-weight:600;
+    letter-spacing:.5px;
+}
+
+.stat-card .stat-value{
+    font-size:20px;
+    font-weight:700;
+}
+
+/* Card Colors */
+
+.border-left-primary{border-left:4px solid #3b82f6;}
+.border-left-info{border-left:4px solid #06b6d4;}
+.border-left-success{border-left:4px solid #22c55e;}
+.border-left-warning{border-left:4px solid #f59e0b;}
+
+/* ===============================
+   FILTER BAR
+=================================*/
+
+.navy-filter{
+    background:linear-gradient(135deg,#0f172a,#1e293b);
+    box-shadow:0 10px 25px rgba(0,0,0,0.15);
+}
+
+.navy-filter .form-control,
+.navy-filter .form-select{
+    border-radius:10px;
+    height:42px;
+    font-size:13px;
+    background: #0f172a;
+    color: #cbd5e1;
+    border:1px solid #334155;
+}
+
+.navy-filter .input-group-text{
+    border-radius:10px 0 0 10px;
+}
+
+.navy-filter .form-control:focus,
+.navy-filter .form-select:focus{
+    box-shadow:0 0 0 2px #2e59e2;
+}
+/* PLACEHOLDER SEARCH */
+.navy-filter .form-control::placeholder{
+    color: #ffffff;
+    opacity: 1;
+}
+
+/* untuk browser tertentu */
+.navy-filter input::placeholder{
+    color:#ffffff;
+    opacity:1;
+}
+.btn-navy{
+    background:#1e3a8a;
+    color:#fff;
+    border-radius:10px;
+    height:42px;
+    padding:0 18px;
+}
+
+.btn-navy:hover{
+    background:#1e40af;
+}
+.btn-grey{
+    background:#334155;
+    color:#cbd5e1;
+    border-radius:10px;
+    height:42px;
+    padding:0 18px;
+    border:1px solid #1e293b;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    font-size:14px;
+    font-weight:500;
+    text-decoration:none;
+    transition:all .25s ease;
+}
+
+.btn-grey:hover{
+    background:#475569;
+    color:#ffffff;
+    transform:translateY(-1px);
+    box-shadow:0 6px 14px rgba(0,0,0,0.15);
+}
+
+.btn-grey:active{
+    transform:scale(.97);
+}
+.reset-link{
+    color:#cbd5e1;
+    font-size:13px;
+}
+
+.reset-link:hover{
+    color:#fff;
+}
+
+/* ===============================
+   TABLE
+=================================*/
+
+.table{
+    font-size:14px;
+}
+
+.table thead th{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+}
+
+.table td{
+    vertical-align:middle;
+}
+
+.table tbody tr{
+    transition:.15s;
+}
+
+.table tbody tr:hover{
+    background:#f8fafc;
+}
+.card-header{
+    background-color:#0f172a !important; /* sedikit lebih gelap dari body */
+    color:#ffffff !important;
+}
+/* ===============================
+   BADGES
+=================================*/
+
+.badge{
+    font-size:11px;
+    padding:6px 8px;
+}
+
+/* ===============================
+   PAGINATION
+=================================*/
+
+.pagination{
+    justify-content:center;
+}
+
+/* ===============================
+   MOBILE OPTIMIZATION
+=================================*/
+
+@media (max-width:768px){
+
+.page-title{
+    font-size:18px;
+}
+
+/* FILTER STACK */
+.navy-filter{
+    flex-direction:column;
+    align-items:stretch !important;
+}
+
+.navy-filter .form-control,
+.navy-filter .form-select{
+    width:100% !important;
+}
+
+/* TABLE FONT */
+.table{
+    font-size:12px;
+}
+
+.table thead{
+    font-size:11px;
+}
+
+/* BUTTON SMALL */
+.btn{
+    font-size:12px;
+}
+
+/* STAT CARD */
+.stat-card{
+    padding:14px;
+}
+
+.stat-card .stat-value{
+    font-size:16px;
+}
+
+}
+/* MODAL */
+#exportModal .modal-content{
+    border-radius:14px;
+    border:none;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+
+/* TITLE */
+#exportModal h5{
+    color:#0b2a4a;
+    font-weight:600;
+}
+
+/* SPINNER */
+.spinner-border{
+    color:#0b2a4a;
+}
+
+/* PROGRESS CONTAINER */
+.progress{
+    height:22px;
+    border-radius:30px;
+    background:#e9edf2;
+}
+
+/* PROGRESS BAR CERAH */
+.progress-bar{
+    font-weight:600;
+    font-size:13px;
+}
+
+/* progress warna cerah + stripes */
+.progress-bar-striped{
+    background-image: linear-gradient(
+        45deg,
+        rgba(255,255,255,.25) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255,255,255,.25) 50%,
+        rgba(255,255,255,.25) 75%,
+        transparent 75%,
+        transparent
+    ),
+    linear-gradient(90deg,#38bdf8,#0ea5e9);
+
+    background-size: 1rem 1rem, 100% 100%;
+}
+
+/* TEXT */
+#progressText{
+    font-size:14px;
+    color:#0b2a4a;
+}
+.text-primary-white{
+    color:#ffffff;
+}
