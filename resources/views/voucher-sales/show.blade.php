@@ -60,7 +60,7 @@ body {
 <div class="mb-3">
     <a href="{{ route('voucher-sales.index') }}" 
        class="btn btn-outline-light btn-sm">
-        <i class="fas fa-arrow-left me-1"></i> Back to List
+        <i class="fas fa-arrow-left me-1"></i> Kembali ke daftar penjualan
     </a>
 </div>
 
@@ -68,7 +68,7 @@ body {
 <div class="card shadow mb-4 navy-card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h6 class="m-0 fw-semibold">
-            <i class="fas fa-ticket-alt me-2"></i> Voucher Sale Information
+            <i class="fas fa-ticket-alt me-2"></i> Penjualan voucher tanggal {{ \Carbon\Carbon::parse($sale->sale_date)->format('d F Y') }}
         </h6>
         <span class="badge bg-secondary">{{ $sale->source }}</span>
     </div>
@@ -84,14 +84,14 @@ body {
                         <td>{{ $sale->id }}</td>
                     </tr>
                     <tr>
-                        <td><strong>Sale Date</strong></td>
+                        <td><strong>Tanggal penjualan</strong></td>
                         <td>
                             <i class="far fa-calendar-alt me-1"></i>
                             {{ \Carbon\Carbon::parse($sale->sale_date)->format('l, d F Y') }}
                         </td>
                     </tr>
                     <tr>
-                        <td><strong>Source</strong></td>
+                        <td><strong>Sumber</strong></td>
                         <td>
                             <span class="badge bg-info text-dark">
                                 {{ $sale->source }}
@@ -104,15 +104,15 @@ body {
             <div class="col-md-6">
                 <table class="table table-bordered mb-0 table-dark">
                     <tr>
-                        <td width="200"><strong>Total Transactions</strong></td>
+                        <td width="200"><strong>Total Transaksi</strong></td>
                         <td>
                             <span class="badge bg-success">
-                                {{ number_format($sale->total_transactions) }} transactions
+                                {{ number_format($sale->total_transactions) }} transaksi
                             </span>
                         </td>
                     </tr>
                     <tr>
-                        <td><strong>Total Amount</strong></td>
+                        <td><strong>Jumlah (Rp)</strong></td>
                         <td>
                             <h4 class="mb-0 text-warning fw-semibold">
                                 Rp {{ number_format($sale->total_amount, 0, ',', '.') }}
@@ -120,7 +120,7 @@ body {
                         </td>
                     </tr>
                     <tr>
-                        <td><strong>Average per Transaction</strong></td>
+                        <td><strong>Rata-rata per Transaksi</strong></td>
                         <td>
                             Rp {{ number_format($sale->total_transactions > 0 ? $sale->total_amount / $sale->total_transactions : 0, 0, ',', '.') }}
                         </td>
@@ -136,14 +136,14 @@ body {
             <div class="col-md-6">
                 <small>
                     <i class="far fa-clock me-1"></i>
-                    Created:
+                    Dibuat pada:
                     {{ \Carbon\Carbon::parse($sale->created_at)->format('d M Y H:i:s') }}
                 </small>
             </div>
             <div class="col-md-6 text-md-end">
                 <small>
                     <i class="far fa-clock me-1"></i>
-                    Updated:
+                    Diperbarui pada:
                     {{ \Carbon\Carbon::parse($sale->updated_at)->format('d M Y H:i:s') }}
                     ({{ \Carbon\Carbon::parse($sale->updated_at)->diffForHumans() }})
                 </small>
@@ -158,7 +158,7 @@ body {
 <div class="card shadow mb-4 navy-card">
     <div class="card-header">
         <h6 class="m-0 fw-semibold">
-            <i class="fas fa-book me-2"></i> Related Journal Entry
+            <i class="fas fa-book me-2"></i> Entri Jurnal Terkait
         </h6>
     </div>
 
@@ -166,8 +166,8 @@ body {
 
         <div class="row mb-3">
             <div class="col-md-6">
-                <p class="mb-1"><strong>Journal Date:</strong> {{ $journalEntry->journal_date }}</p>
-                <p class="mb-1"><strong>Description:</strong> {{ $journalEntry->description }}</p>
+                <p class="mb-1"><strong>Tanggal Jurnal:</strong> {{ $journalEntry->journal_date }}</p>
+                <p class="mb-1"><strong>Deskripsi:</strong> {{ $journalEntry->description }}</p>
             </div>
             <div class="col-md-6 text-md-end">
                 <p class="mb-1"><strong>Reference No:</strong> {{ $journalEntry->reference_no ?? '-' }}</p>
@@ -182,10 +182,10 @@ body {
             <table class="table table-sm table-bordered table-dark ">
                 <thead class="table-dark ">
                     <tr>
-                        <th >Account Code</th>
-                        <th>Account Name</th>
+                        <th >Kode Akun</th>
+                        <th>Nama Akun</th>
                         <th class="text-end">Debit</th>
-                        <th class="text-end">Credit</th>
+                        <th class="text-end">Kredit</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -232,7 +232,7 @@ body {
 <div class="card shadow mb-4 navy-card">
     <div class="card-header">
         <h6 class="m-0 fw-semibold">
-            <i class="fas fa-cog me-2"></i> Actions
+            <i class="fas fa-cog me-2"></i> Aksi
         </h6>
     </div>
 

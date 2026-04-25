@@ -166,7 +166,7 @@
                                     class="btn btn-primary rounded-pill px-4"
                                     id="btn-submit">
                                 <i class="bi bi-rocket-takeoff me-2"></i>
-                                Jalankan Pipeline
+                                Import sekarang
                             </button>
 
                         </div>
