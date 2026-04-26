@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\VoucherSalesExport;
+use App\Models\DailyVoucherSale;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use App\Models\DailyVoucherSale;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Artisan;
+use Maatwebsite\Excel\Facades\Excel;
 
 class VoucherSaleController extends Controller
 {
@@ -193,82 +195,23 @@ class VoucherSaleController extends Controller
     }
 
     /**
-     * Export voucher sales to CSV
+     * Export EXCEL
      */
-    public function export(Request $request)
-    {
-        $query = DailyVoucherSale::query();
+  public function export(Request $request)
+{
+    $query = DailyVoucherSale::query();
 
-        // Apply filters
-        if ($request->filled('date_from')) {
-            $query->where('sale_date', '>=', $request->date_from);
-        }
-
-        if ($request->filled('date_to')) {
-            $query->where('sale_date', '<=', $request->date_to);
-        }
-
-        $sales = $query->orderBy('sale_date')->get();
-
-        // Prepare CSV
-        $csvData   = [];
-        $csvData[] = ['Date', 'Total Transactions', 'Total Amount', 'Source', 'Import Batch', 'Created At'];
-
-        foreach ($sales as $sale) {
-            $csvData[] = [
-                $sale->sale_date,
-                $sale->total_transactions,
-                $sale->total_amount,
-                $sale->source,
-                $sale->import_batch_id,
-                $sale->created_at,
-            ];
-        }
-
-        // Generate CSV
-        $filename = 'voucher_sales_' . now()->format('Y-m-d_His') . '.csv';
-
-        $handle = fopen('php://temp', 'r+');
-        foreach ($csvData as $row) {
-            fputcsv($handle, $row);
-        }
-        rewind($handle);
-        $csv = stream_get_contents($handle);
-        fclose($handle);
-
-        return response($csv, 200, [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
+    if ($request->filled('date_from')) {
+        $query->where('sale_date', '>=', $request->date_from);
     }
 
-    /**
-     * API endpoint for chart data
-     */
-    public function chartData(Request $request)
-    {
-        $months = $request->get('months', 6);
-
-        $data = [];
-
-        for ($i = $months - 1; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
-
-            $monthData = DailyVoucherSale::whereMonth('sale_date', $date->month)
-                ->whereYear('sale_date', $date->year)
-                ->selectRaw('
-                    SUM(total_transactions) as transactions,
-                    SUM(total_amount) as amount
-                ')
-                ->first();
-
-            $data[] = [
-                'month'        => $date->format('M Y'),
-                'transactions' => $monthData->transactions ?? 0,
-                'amount'       => $monthData->amount ?? 0,
-            ];
-        }
-
-        return response()->json($data);
+    if ($request->filled('date_to')) {
+        $query->where('sale_date', '<=', $request->date_to);
     }
+
+    $sales    = $query->orderBy('sale_date')->get();
+    $filename = 'penjualan_voucher' . now()->format('Y-m-d_His') . '.xlsx';
+
+    return Excel::download(new VoucherSalesExport($sales), $filename);
+}
 }

@@ -315,9 +315,11 @@ body {
                 <span class="admin-nominal">Rp {{ number_format($admin->total_nominal, 0, ',', '.') }}</span>
             </div>
         @endforeach
+        
     </div>
 </div>
 @endif
+
 
 {{-- FORM FILTER --}}
 <div class="card filter-card mb-3">
@@ -387,6 +389,7 @@ body {
 
             </div>
         </form>
+          
 
         {{-- Filter Aktif --}}
         @php
@@ -430,47 +433,81 @@ body {
     </div>
 </div>
 
-{{-- FORM IMPORT --}}
-<div class="card filter-card mb-4">
+{{-- BULK ACTIONS CARD --}}
+<div class="card filter-card mb-4" style="border-left: 4px solid #3b82f6;">
     <div class="card-body">
-        <form method="POST" action="{{ route('sinkron.import') }}">
-            @csrf
-            <div class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label"><b>Pilih Bulan Import</b></label>
-                    <input type="month" name="bulan" value="{{ now()->format('Y-m') }}"
-                        class="form-control">
-                </div>
-                <div class="col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-navy px-4">
-                        <i class="fas fa-file-import me-1"></i> Import Sekarang
-                    </button>
+        <div class="row g-3">
+            {{-- IMPORT SECTION --}}
+            <div class="col-md-4">
+                <form method="POST" action="{{ route('sinkron.import') }}" class="h-100">
+                    @csrf
+                    <div class="d-flex flex-column h-100">
+                        <label class="form-label mb-2"><b><i class="fas fa-download me-2"></i>Import Data</b></label>
+                        <div class="mb-3 flex-grow-1">
+                            <input type="month" name="bulan" value="{{ now()->format('Y-m') }}"
+                                class="form-control form-control-sm" placeholder="Pilih bulan">
+                            <small class="text-muted d-block mt-1">Import data dari sistem billing</small>
+                        </div>
+                        <button type="submit" class="btn btn-navy w-100 btn-sm">
+                            <i class="fas fa-file-import me-1"></i> Import Sekarang
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {{-- EXPORT SECTION --}}
+            <div class="col-md-4">
+                <div class="d-flex flex-column h-100" style="gap: 10px;">
+                    <label class="form-label mb-2"><b><i class="fas fa-upload me-2"></i>Export Data</b></label>
+                    <div class="flex-grow-1">
+                        <small class="text-muted d-block mb-2">Export transaksi ke Excel</small>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <a href="{{ route('sinkron.export') }}" 
+                               class="btn btn-outline-success btn-sm" 
+                               title="Export dengan filter saat ini">
+                                <i class="fas fa-filter me-1"></i> Filter Aktif
+                            </a>
+                            <a href="{{ route('sinkron.export', ['all' => 1]) }}" 
+                               class="btn btn-outline-success btn-sm" 
+                               title="Export semua data">
+                                <i class="fas fa-list me-1"></i> Semua Data
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </form>
+
+            {{-- DELETE SECTION --}}
+            <div class="col-md-4">
+                <form method="POST" action="{{ route('sinkron.deleteTransaksi') }}" 
+                      onsubmit="return confirm('Apakah Anda yakin ingin menghapus semua data transaksi untuk bulan ini?\n\nData yang sudah dijurnal tidak akan dihapus.');"
+                      class="h-100">
+                    @csrf
+                    @method('DELETE')
+                    <div class="d-flex flex-column h-100">
+                        <label class="form-label mb-2"><b><i class="fas fa-trash me-2"></i>Hapus Data</b></label>
+                        <div class="mb-3 flex-grow-1">
+                            <input type="month" name="bulan" value="{{ now()->format('Y-m') }}"
+                                class="form-control form-control-sm" required>
+                            <small class="text-muted d-block mt-1">Hapus per bulan tagihan</small>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100 btn-sm">
+                            <i class="fas fa-trash-alt me-1"></i> Hapus Bulan Ini
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
-{{-- FORM DELETE --}}
-<div class="card filter-card mb-4">
-    <div class="card-body">
-        <form method="POST" action="{{ route('sinkron.deleteTransaksi') }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus semua data transaksi untuk bulan ini? Data yang sudah dijurnal tidak akan dihapus.')">
-            @csrf
-            @method('DELETE')
-            <div class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label"><b>Pilih Bulan Hapus</b></label>
-                    <input type="month" name="bulan" value="{{ now()->format('Y-m') }}"
-                        class="form-control" required>
-                </div>
-                <div class="col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-danger px-4">
-                        <i class="fas fa-trash me-1"></i> Hapus Data Bulan Ini
-                    </button>
-                </div>
-            </div>
-        </form>
-    </div>
+{{-- QUICK EXPORT BUTTONS --}}
+<div class="mb-3 d-flex gap-2 justify-content-end">
+    <a href="{{ route('sinkron.export') }}" 
+       class="btn btn-sm btn-outline-success" 
+       title="Download transaksi sesuai filter yang aktif">
+        <i class="fas fa-download me-1"></i> Export
+    </a>
 </div>
 <div class="card modern-card">
     <div class="card-body p-0">

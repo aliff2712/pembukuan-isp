@@ -148,6 +148,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/pembukuan/sinkron/import', [SinkronImportController::class, 'import'])
         ->middleware('throttle:sinkron')
         ->name('sinkron.import');
+    Route::get('/pembukuan/sinkron/export',  [SinkronImportController::class, 'exportTransaksi'])
+        ->middleware('throttle:60,1')
+        ->name('sinkron.export');
     Route::delete('/pembukuan/sinkron/delete', [SinkronImportController::class, 'deleteTransaksi'])
         ->middleware('throttle:sinkron')
         ->name('sinkron.deleteTransaksi');

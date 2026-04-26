@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 use App\Enums\JournalSourceType;
+use App\Exports\PelangganExport;
+use App\Exports\TransaksiExport;
 use App\Models\JournalEntry;
 use App\Models\SinkronBelumBayar;
 use App\Models\SinkronPelanggan;
@@ -14,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SinkronImportController extends Controller
 {
@@ -315,7 +318,7 @@ class SinkronImportController extends Controller
         return back()->with('success', "Import selesai: {$imported} pelanggan baru, {$skipped} diperbarui.");
     }
 
-    public function exportPelanggan(Request $request)
+        public function exportPelanggan(Request $request)
     {
         Log::info('Export pelanggan dilakukan', [
             'user_id' => Auth::id(),
@@ -325,122 +328,121 @@ class SinkronImportController extends Controller
         ]);
 
         $pelanggan = SinkronPelanggan::orderBy('nama')->get();
-        $filename  = 'pelanggan_' . now()->format('Y_m_d') . '.csv';
+        $filename  = 'pelanggan_' . now()->format('Y_m_d') . '.xlsx';
 
-        $headers = [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-        ];
+        return Excel::download(new PelangganExport($pelanggan), $filename);
+    }
 
-        $callback = function () use ($pelanggan) {
-            $file = fopen('php://output', 'w');
+    public function exportTransaksi(Request $request)
+    {
+        Log::info('Export transaksi dilakukan', [
+            'user_id' => Auth::id(),
+            'user'    => Auth::user()->name ?? '-',
+            'ip'      => $request->ip(),
+            'at'      => now()->toDateTimeString(),
+        ]);
 
-            fputcsv($file, [
-                'No', 'Nama', 'Phone', 'Paket', 'Harga Paket',
-                'Area', 'Diskon (%)', 'Total Tagihan',
-                'Tanggal Register', 'Status',
-            ]);
+        $query = SinkronTransaksi::orderBy('tanggal_bayar', 'desc');
 
-            foreach ($pelanggan as $i => $p) {
-                fputcsv($file, [
-                    $i + 1,
-                    $p->nama,
-                    $p->phone,
-                    $p->paket,
-                    $p->harga_paket,
-                    $p->area,
-                    $p->diskon,
-                    $p->total_tagihan,
-                    $p->tanggal_register,
-                    $p->status,
+        if ($request->filled('bulan_filter')) {
+            $query->where('bulan_tagihan', 'like', $request->bulan_filter . '%');
+        }
+        if ($request->filled('area')) {
+            $query->where('area', $request->area);
+        }
+        if ($request->filled('metode')) {
+            $query->where('metode', $request->metode);
+        }
+        if ($request->filled('dibayar_oleh')) {
+            $query->where('dibayar_oleh', $request->dibayar_oleh);
+        }
+
+        $transaksi = $query->get();
+        $filename  = 'transaksi_' . now()->format('Y_m_d') . '.xlsx';
+
+        return Excel::download(new TransaksiExport($transaksi), $filename);
+    }
+
+        
+        public function importBelumBayar(Request $request)
+    {
+        // Validasi bulan
+        $request->validate([
+            'bulan' => ['required', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
+        ], [
+            'bulan.regex' => 'Format bulan tidak valid. Gunakan format YYYY-MM.',
+        ]);
+
+        try {
+            $response = Http::withHeaders(['Accept' => 'application/json'])
+                ->withOptions(['verify' => true, 'timeout' => 30])
+                ->get(config('services.billing.url') . '/api/tagihan-belum-bayar', [
+                    'bulan' => $request->bulan,
                 ]);
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
-    }
-    
-    public function importBelumBayar(Request $request)
-{
-    // Validasi bulan
-    $request->validate([
-        'bulan' => ['required', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
-    ], [
-        'bulan.regex' => 'Format bulan tidak valid. Gunakan format YYYY-MM.',
-    ]);
-
-    try {
-        $response = Http::withHeaders(['Accept' => 'application/json'])
-            ->withOptions(['verify' => true, 'timeout' => 30])
-            ->get(config('services.billing.url') . '/api/tagihan-belum-bayar', [
-                'bulan' => $request->bulan,
-            ]);
-    } catch (\Illuminate\Http\Client\ConnectionException $e) {
-        return back()->with('error', 'Server billing tidak dapat dihubungi.');
-    }
-
-    if (!$response->ok()) {
-        return back()->with('error', 'Gagal mengambil data dari billing (HTTP ' . $response->status() . ').');
-    }
-
-    $tagihans = $response->json('data');
-
-    if (empty($tagihans)) {
-        return back()->with('error', 'Tidak ada data tagihan belum bayar.');
-    }
-
-    $imported = 0;
-    $skipped  = 0;
-
-    foreach ($tagihans as $t) {
-
-        // Validasi field wajib
-        $required = ['id_pelanggan', 'nama_pelanggan', 'bulan'];
-        $valid = true;
-
-        foreach ($required as $field) {
-            if (!isset($t[$field])) {
-                Log::warning("SinkronBelumBayar: field '{$field}' tidak ada", ['data' => $t]);
-                $valid = false;
-                break;
-            }
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            return back()->with('error', 'Server billing tidak dapat dihubungi.');
         }
 
-        if (!$valid) {
-            $skipped++;
-            continue;
+        if (!$response->ok()) {
+            return back()->with('error', 'Gagal mengambil data dari billing (HTTP ' . $response->status() . ').');
         }
 
-        $result = SinkronBelumBayar::updateOrCreate(
-            [
-                'id_pelanggan_billing' => (int) $t['id_pelanggan'],
-                'bulan'                => (string) $t['bulan'],
-            ],
-            [
-                'nama_pelanggan'   => (string) substr($t['nama_pelanggan'] ?? '', 0, 150),
-                'area'             => $t['area'] ?? null,
-                'paket'            => $t['paket'] ?? null,
+        $tagihans = $response->json('data');
 
-                'harga_paket'      => isset($t['harga_paket']) ? (float) $t['harga_paket'] : 0,
-                'biaya_tambahan_1' => isset($t['biaya_tambahan_1']) ? (float) $t['biaya_tambahan_1'] : 0,
-                'biaya_tambahan_2' => isset($t['biaya_tambahan_2']) ? (float) $t['biaya_tambahan_2'] : 0,
-                'diskon'           => isset($t['diskon']) ? (float) $t['diskon'] : 0,
-                'total_tagihan'    => isset($t['total_tagihan']) ? (float) $t['total_tagihan'] : 0,
+        if (empty($tagihans)) {
+            return back()->with('error', 'Tidak ada data tagihan belum bayar.');
+        }
 
-                'status'           => $t['status'] ?? 'belum_lunas',
-            ]
+        $imported = 0;
+        $skipped  = 0;
+
+        foreach ($tagihans as $t) {
+
+            // Validasi field wajib
+            $required = ['id_pelanggan', 'nama_pelanggan', 'bulan'];
+            $valid = true;
+
+            foreach ($required as $field) {
+                if (!isset($t[$field])) {
+                    Log::warning("SinkronBelumBayar: field '{$field}' tidak ada", ['data' => $t]);
+                    $valid = false;
+                    break;
+                }
+            }
+
+            if (!$valid) {
+                $skipped++;
+                continue;
+            }
+
+            $result = SinkronBelumBayar::updateOrCreate(
+                [
+                    'id_pelanggan_billing' => (int) $t['id_pelanggan'],
+                    'bulan'                => (string) $t['bulan'],
+                ],
+                [
+                    'nama_pelanggan'   => (string) substr($t['nama_pelanggan'] ?? '', 0, 150),
+                    'area'             => $t['area'] ?? null,
+                    'paket'            => $t['paket'] ?? null,
+
+                    'harga_paket'      => isset($t['harga_paket']) ? (float) $t['harga_paket'] : 0,
+                    'biaya_tambahan_1' => isset($t['biaya_tambahan_1']) ? (float) $t['biaya_tambahan_1'] : 0,
+                    'biaya_tambahan_2' => isset($t['biaya_tambahan_2']) ? (float) $t['biaya_tambahan_2'] : 0,
+                    'diskon'           => isset($t['diskon']) ? (float) $t['diskon'] : 0,
+                    'total_tagihan'    => isset($t['total_tagihan']) ? (float) $t['total_tagihan'] : 0,
+
+                    'status'           => $t['status'] ?? 'belum_lunas',
+                ]
+            );
+
+            $result->wasRecentlyCreated ? $imported++ : $skipped++;
+        }
+
+        return back()->with(
+            'success',
+            "Sinkron belum bayar selesai: {$imported} data baru, {$skipped} diperbarui."
         );
-
-        $result->wasRecentlyCreated ? $imported++ : $skipped++;
     }
-
-    return back()->with(
-        'success',
-        "Sinkron belum bayar selesai: {$imported} data baru, {$skipped} diperbarui."
-    );
-}
 
 
  public function belumBayar(Request $request)

@@ -200,7 +200,7 @@ body { background: #0f172a; }
 
             {{-- Export CSV --}}
             <a href="{{ route('sinkron.pelanggan.export') }}" class="btn btn-export px-4">
-                <i class="fas fa-file-csv me-1"></i> Export CSV
+                <i class="fas fa-file-csv me-1"></i> Export 
             </a>
         </div>
     </div>
