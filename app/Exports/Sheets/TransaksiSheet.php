@@ -2,6 +2,7 @@
 
 namespace App\Exports\Sheets;
 
+use App\Models\SinkronTransaksi;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -22,21 +23,40 @@ class TransaksiSheet implements FromQuery, WithMapping, WithHeadings, WithChunkR
 
     public function query()
     {
-        return DB::table('transaksis')
+        // FIX: Menggunakan SinkronTransaksi sebagai sumber data transaksi
+        return SinkronTransaksi::query()
             ->when($this->bulan, function ($query) {
-                $query->whereMonth('tanggal', $this->bulan);
+                $query->whereMonth('tanggal_bayar', $this->bulan);
             })
-            ->whereYear('tanggal', $this->tahun)
+            ->whereYear('tanggal_bayar', $this->tahun)
             ->select(
                 'kode_transaksi',
-                'nama_customer',
-                'tanggal',
-                'jatuh_tempo',
-                'total',
-                'status',
-                'paid_at'
+                'nama_pelanggan',
+                'tanggal_bayar',
+                'jumlah',
+                'metode',
+                'area',
+                'paket',
+                'status'
             )
-            ->orderBy('tanggal');
+            ->orderBy('tanggal_bayar');
+
+        // DEPRECATED: Transaksi model sudah diganti dengan SinkronTransaksi
+        // return DB::table('transaksis')
+        //     ->when($this->bulan, function ($query) {
+        //         $query->whereMonth('tanggal', $this->bulan);
+        //     })
+        //     ->whereYear('tanggal', $this->tahun)
+        //     ->select(
+        //         'kode_transaksi',
+        //         'nama_customer',
+        //         'tanggal',
+        //         'jatuh_tempo',
+        //         'total',
+        //         'status',
+        //         'paid_at'
+        //     )
+        //     ->orderBy('tanggal');
     }
 
     public function map($transaksi): array
@@ -46,18 +66,15 @@ class TransaksiSheet implements FromQuery, WithMapping, WithHeadings, WithChunkR
         return [
             $this->rowNumber,
             $transaksi->kode_transaksi,
-            $transaksi->nama_customer,
-            $transaksi->tanggal 
-                ? date('d/m/Y', strtotime($transaksi->tanggal)) 
+            $transaksi->nama_pelanggan,
+            $transaksi->tanggal_bayar
+                ? date('d/m/Y', strtotime($transaksi->tanggal_bayar))
                 : '-',
-            $transaksi->jatuh_tempo 
-                ? date('d/m/Y', strtotime($transaksi->jatuh_tempo)) 
-                : '-',
-            $transaksi->total,
-            strtoupper($transaksi->status),
-            $transaksi->paid_at 
-                ? date('d/m/Y H:i', strtotime($transaksi->paid_at)) 
-                : '-',
+            $transaksi->jumlah,
+            $transaksi->metode ?? '-',
+            $transaksi->area ?? '-',
+            $transaksi->paket ?? '-',
+            strtoupper($transaksi->status ?? '-'),
         ];
     }
 
@@ -66,12 +83,13 @@ class TransaksiSheet implements FromQuery, WithMapping, WithHeadings, WithChunkR
         return [
             'No',
             'Kode Transaksi',
-            'Customer',
-            'Tanggal',
-            'Jatuh Tempo',
-            'Total',
+            'Pelanggan',
+            'Tanggal Bayar',
+            'Jumlah',
+            'Metode',
+            'Area',
+            'Paket',
             'Status',
-            'Dibayar Pada',
         ];
     }
 

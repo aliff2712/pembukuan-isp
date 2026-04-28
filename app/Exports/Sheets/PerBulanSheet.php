@@ -2,7 +2,7 @@
 
 namespace App\Exports\Sheets;
 
-use App\Models\Transaksi;
+use App\Models\SinkronTransaksi;
 use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -19,11 +19,19 @@ class PerBulanSheet implements FromQuery, WithHeadings, WithChunkReading
 
     public function query(): Builder
     {
-        return Transaksi::query()
-            ->whereYear('tanggal', $this->tahun)
-            ->selectRaw('MONTH(tanggal) as bulan, SUM(total) as total')
-            ->groupByRaw('MONTH(tanggal)')
-            ->orderByRaw('MONTH(tanggal)');
+        // FIX: Menggunakan SinkronTransaksi sebagai sumber data transaksi
+        return SinkronTransaksi::query()
+            ->whereYear('tanggal_bayar', $this->tahun)
+            ->selectRaw('MONTH(tanggal_bayar) as bulan, SUM(jumlah) as total')
+            ->groupByRaw('MONTH(tanggal_bayar)')
+            ->orderByRaw('MONTH(tanggal_bayar)');
+
+        // DEPRECATED: Transaksi model sudah diganti dengan SinkronTransaksi
+        // return Transaksi::query()
+        //     ->whereYear('tanggal', $this->tahun)
+        //     ->selectRaw('MONTH(tanggal) as bulan, SUM(total) as total')
+        //     ->groupByRaw('MONTH(tanggal)')
+        //     ->orderByRaw('MONTH(tanggal)');
     }
 
     public function headings(): array

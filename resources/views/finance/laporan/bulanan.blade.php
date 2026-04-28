@@ -12,23 +12,11 @@
         <div class="col-md-3">
             <div class="card bg-success text-white shadow-sm">
                 <div class="card-body">
-                    <small>Member Bayar</small>
+                    <small>Sinkron Transaksi</small>
                     <h5 class="fw-bold">
-                        Rp {{ number_format($summary['memberPaid'],0,',','.') }}
+                        Rp {{ number_format($summary['sinkronTransaksiTotal'],0,',','.') }}
                     </h5>
-                    <small>{{ $summary['memberPaidCount'] }} transaksi</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card bg-warning text-dark shadow-sm">
-                <div class="card-body">
-                    <small>Member Belum bayar</small>
-                    <h5 class="fw-bold">
-                        Rp {{ number_format($summary['memberUnpaid'],0,',','.') }}
-                    </h5>
-                    <small>{{ $summary['memberUnpaidCount'] }} transaksi</small>
+                    <small>{{ $summary['sinkronTransaksiCount'] }} transaksi</small>
                 </div>
             </div>
         </div>
@@ -41,6 +29,18 @@
                         Rp {{ number_format($summary['voucherTotal'],0,',','.') }}
                     </h5>
                     <small>{{ $summary['voucherTransaksi'] }} transaksi</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white shadow-sm">
+                <div class="card-body">
+                    <small>Pemasukan lain</small>
+                    <h5 class="fw-bold">
+                        Rp {{ number_format($summary['otherTotal'],0,',','.') }}
+                    </h5>
+                    <small>{{ $summary['otherCount'] }} transaksi</small>
                 </div>
             </div>
         </div>
@@ -91,26 +91,25 @@
         <table class="table table-dark table-striped table-bordered mb-0">
             <thead>
                 <tr>
-                    <th>Tanggal</th>
+                    <th>Tanggal Bayar</th>
                     <th>Kategori</th>
                     <th>Keterangan</th>
-                    <th>Status</th>
+                    <th>Metode</th>
                     <th>Total</th>
                 </tr>
             </thead>
 
                     @foreach($transaksis as $t)
                         <tr>
-                            <td>{{ $t->tanggal->format('d M Y') }}</td>
-                            <td>Member</td>
-                            <td>{{ $t->nama_customer }}</td>
+                            <td>{{ $t->tanggal_bayar->format('d M Y') }}</td>
+                            <td>Sinkron Transaksi</td>
+                            <td>{{ $t->nama_pelanggan }} - {{ $t->paket ?? '-' }}</td>
                             <td>
-                                <span class="badge 
-                                    {{ $t->status == 'paid' ? 'bg-success' : 'bg-warning' }}">
-                                    {{ ucfirst($t->status) }}
+                                <span class="badge bg-info">
+                                    {{ ucfirst($t->metode ?? '-') }}
                                 </span>
                             </td>
-                            <td>Rp {{ number_format($t->total,0,',','.') }}</td>
+                            <td>Rp {{ number_format($t->jumlah,0,',','.') }}</td>
                         </tr>
                     @endforeach
 

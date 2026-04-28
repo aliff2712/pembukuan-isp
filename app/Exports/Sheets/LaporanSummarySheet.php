@@ -4,7 +4,7 @@ namespace App\Exports\Sheets;
 
 use App\Models\DailyVoucherSale;
 use App\Models\OtherIncome;
-use App\Models\Transaksi;
+use App\Models\SinkronTransaksi;
 use App\Models\Expense;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromArray;
@@ -33,13 +33,18 @@ class LaporanSummarySheet implements FromArray, WithTitle, WithStyles, WithColum
         ->whereYear($kolom, $this->tahun)
         ->when($this->bulan, fn($q) => $q->whereMonth($kolom, $this->bulan));
 
-    $paid    = $filterWaktu(Transaksi::where('status', 'paid'),    'tanggal')->sum('total');
-    $unpaid  = $filterWaktu(Transaksi::where('status', 'unpaid'),  'tanggal')->sum('total');
+    // FIX: Menggunakan SinkronTransaksi sebagai sumber data transaksi
+    $sinkron = $filterWaktu(SinkronTransaksi::query(), 'tanggal_bayar')->sum('jumlah');
+
+    // DEPRECATED: Transaksi model sudah diganti dengan SinkronTransaksi
+    // $paid    = $filterWaktu(Transaksi::where('status', 'paid'),    'tanggal')->sum('total');
+    // $unpaid  = $filterWaktu(Transaksi::where('status', 'unpaid'),  'tanggal')->sum('total');
+
     $voucher = $filterWaktu(DailyVoucherSale::query(), 'sale_date')->sum('total_amount');
     $other   = $filterWaktu(OtherIncome::query(),     'income_date')->sum('amount');
-    $expense = $filterWaktu(Expense::query(),          'expense_date')->sum('amount'); // ← tambah ini
+    $expense = $filterWaktu(Expense::query(),          'expense_date')->sum('amount');
 
-    $totalPendapatan  = $paid + $voucher + $other;
+    $totalPendapatan  = $sinkron + $voucher + $other;
     $labaKotor        = $totalPendapatan - $expense;
 
     return [
@@ -47,10 +52,9 @@ class LaporanSummarySheet implements FromArray, WithTitle, WithStyles, WithColum
         [''],
         ['RINGKASAN PENDAPATAN'],
         ['Sumber', 'Nominal'],
-        ['Member - Paid',   $paid],
-        ['Member - Unpaid', $unpaid],
-        ['Voucher',         $voucher],
-        ['Other Income',    $other],
+        ['Sinkron Transaksi', $sinkron],
+        ['Voucher',           $voucher],
+        ['Other Income',      $other],
         [''],
         ['TOTAL PENDAPATAN BERSIH', $totalPendapatan],
         [''],
@@ -78,10 +82,10 @@ class LaporanSummarySheet implements FromArray, WithTitle, WithStyles, WithColum
         1  => ['font' => ['bold' => true, 'size' => 14]], // Judul
         3  => ['font' => ['bold' => true]],               // RINGKASAN PENDAPATAN
         4  => ['font' => ['bold' => true]],               // Header tabel pendapatan
-        10 => ['font' => ['bold' => true]],               // TOTAL PENDAPATAN BERSIH
-        12 => ['font' => ['bold' => true]],               // RINGKASAN PENGELUARAN
-        13 => ['font' => ['bold' => true]],               // Header tabel pengeluaran
-        16 => ['font' => ['bold' => true, 'size' => 12]], // LABA / RUGI
+        9  => ['font' => ['bold' => true]],               // TOTAL PENDAPATAN BERSIH
+        11 => ['font' => ['bold' => true]],               // RINGKASAN PENGELUARAN
+        12 => ['font' => ['bold' => true]],               // Header tabel pengeluaran
+        15 => ['font' => ['bold' => true, 'size' => 12]], // LABA / RUGI
     ];
 }
 }

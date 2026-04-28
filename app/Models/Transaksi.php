@@ -1,5 +1,9 @@
 <?php
 
+// DEPRECATED: Model ini sudah diganti dengan SinkronTransaksi
+// Transaksi model ini masih disimpan untuk referensi, namun tidak lagi digunakan.
+// Semua query transaksi harus menggunakan SinkronTransaksi model.
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +14,8 @@ use Carbon\Carbon;
  * @property \Carbon\Carbon $tanggal
  * @property \Carbon\Carbon $jatuh_tempo
  * @property \Carbon\Carbon|null $paid_at
+ *
+ * @deprecated Gunakan SinkronTransaksi model sebagai gantinya
  */
 class Transaksi extends Model
 {
@@ -21,46 +27,46 @@ class Transaksi extends Model
             'total',
             'status',
             'deskripsi',
-            'paid_at',  
+            'paid_at',
         ];
 
         protected $casts = [
             'tanggal'    => 'date',
             'jatuh_tempo' => 'date',
-            'paid_at'    => 'datetime',  
+            'paid_at'    => 'datetime',
             'total'      => 'integer',
             'deskripsi'  => 'array',
         ];
     protected static function booted()
     {
         static::creating(function ($transaksi) {
-    
+
             if (empty($transaksi->kode_transaksi)) {
                 $transaksi->kode_transaksi =
                     'TRX-' . now()->format('Ymd') . '-' . strtoupper(Str::random(5));
             }
-    
+
             if (empty($transaksi->status)) {
                 $transaksi->status = 'unpaid';
             }
-    
+
             if (empty($transaksi->jatuh_tempo)) {
-    
+
                 $setting = FinanceSetting::first();
-    
+
                 if ($setting && $setting->default_due_date) {
-    
+
                     // FIX: jangan parse langsung
                     $transaksi->jatuh_tempo = Carbon::parse($setting->default_due_date);
-    
+
                 } else {
-    
+
                     $transaksi->jatuh_tempo = Carbon::parse($transaksi->tanggal)->addDays(7);
                 }
             }
         });
     }
-    
+
 
     public function isOverdue(): bool
     {
@@ -79,3 +85,4 @@ class Transaksi extends Model
         };
     }
 }
+

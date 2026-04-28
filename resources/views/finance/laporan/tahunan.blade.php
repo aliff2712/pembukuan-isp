@@ -56,8 +56,7 @@
                 <thead>
                     <tr>
                         <th>Bulan</th>
-                        <th>Member Paid</th>
-                        <th>Member Unpaid</th>
+                        <th>Sinkron Transaksi</th>
                         <th>Voucher</th>
                         <th>Other</th>
                         <th>Total Pendapatan</th>
@@ -71,8 +70,7 @@
                     @foreach($perBulan as $row)
                         <tr>
                             <td>{{ $row['bulan'] }}</td>
-                            <td>Rp {{ number_format($row['member_paid'],0,',','.') }}</td>
-                            <td>Rp {{ number_format($row['member_unpaid'],0,',','.') }}</td>
+                            <td>Rp {{ number_format($row['sinkron'],0,',','.') }}</td>
                             <td>Rp {{ number_format($row['voucher'],0,',','.') }}</td>
                             <td>Rp {{ number_format($row['other'],0,',','.') }}</td>
                             <td class="fw-bold">
