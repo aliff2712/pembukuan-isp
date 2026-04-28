@@ -36,12 +36,8 @@ class SinkronJournalizeService
 
     public function journalize(SinkronTransaksi $trx): bool
     {
-        // 1. Guard: sudah dijurnal sebelumnya?
-        $alreadyExists = JournalEntry::where('source_type', self::SOURCE_TYPE)
-            ->where('source_id', $trx->id)
-            ->exists();
-
-        if ($alreadyExists) {
+        // 1. Guard: sudah dijurnal sebelumnya? (strict flag check)
+        if ($trx->is_journalized) {
             $this->skipped++;
             return false;
         }
@@ -103,6 +99,12 @@ class SinkronJournalizeService
                     'debit'            => 0,
                     'credit'           => $trx->jumlah,
                 ]);
+
+                // Set flag SETELAH jurnal berhasil dibuat
+                $trx->update([
+                    'is_journalized' => true,
+                    'journalized_at' => now(),
+                ]);
             });
 
             $this->created++;
@@ -124,9 +126,7 @@ class SinkronJournalizeService
 
     public function journalizeAll(): array
     {
-        $unjournalized = SinkronTransaksi::whereNotIn('id',
-            JournalEntry::where('source_type', self::SOURCE_TYPE)->pluck('source_id')
-        )->get();
+        $unjournalized = SinkronTransaksi::where('is_journalized', false)->get();
 
         foreach ($unjournalized as $trx) {
             $this->journalize($trx);
@@ -142,9 +142,7 @@ class SinkronJournalizeService
     public function journalizeByBulan(string $bulan): array
     {
         $rows = SinkronTransaksi::where('bulan_tagihan', 'like', $bulan . '%')
-            ->whereNotIn('id',
-                JournalEntry::where('source_type', self::SOURCE_TYPE)->pluck('source_id')
-            )
+            ->where('is_journalized', false)
             ->get();
 
         foreach ($rows as $trx) {

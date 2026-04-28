@@ -26,7 +26,8 @@ class JournalEntryController extends Controller
             ->withCount('lines')
             ->orderBy('journal_date', 'desc')
             ->orderBy('id', 'desc')
-            ->paginate(20);
+            ->paginate(20)
+            ->appends($request->query());
 
         // Lazy eager load 'lines.coa' hanya untuk halaman yang sedang ditampilkan
         // (paginate sudah membatasi set, jadi ini aman)

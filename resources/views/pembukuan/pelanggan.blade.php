@@ -189,7 +189,7 @@ body { background: #0f172a; }
             </form>
 
             {{-- Delete All --}}
-            <form method="POST" action="{{ route('sinkron.deletePelanggan') }}" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus SEMUA data pelanggan? Tindakan ini tidak dapat dibatalkan.')">
+            <form method="POST" action="{{ route('sinkron.pelanggan.delete') }}" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus SEMUA data pelanggan? Tindakan ini tidak dapat dibatalkan.')">
                 @csrf
                 @method('DELETE')
                 <input type="hidden" name="confirm" value="DELETE_ALL">
@@ -297,7 +297,7 @@ body { background: #0f172a; }
                     <button class="btn btn-navy px-4">
                         <i class="fas fa-search me-1"></i> Filter
                     </button>
-                    <a href="{{ route('sinkron.pelanggan') }}" class="btn btn-outline-light px-4">
+                    <a href="{{ route('sinkron.pelanggan.index') }}" class="btn btn-outline-light px-4">
                         Reset
                     </a>
                 </div>
@@ -354,7 +354,7 @@ body { background: #0f172a; }
                             @endif
                         </td>
                         <td class="text-center">
-                            <form method="POST" action="{{ route('sinkron.deletePelangganById', $p->id) }}" class="d-inline" onsubmit="return confirm('Hapus pelanggan {{ $p->nama }}?')">
+                            <form method="POST" action="{{ route('sinkron.pelanggan.deleteById', $p->id) }}" class="d-inline" onsubmit="return confirm('Hapus pelanggan {{ $p->nama }}?')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-danger" title="Hapus pelanggan ini">

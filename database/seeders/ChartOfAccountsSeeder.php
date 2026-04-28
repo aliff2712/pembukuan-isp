@@ -35,6 +35,13 @@ class ChartOfAccountsSeeder extends Seeder
                 'account_type' => 'revenue',
             ],
             [
+                'account_code' => '4102',
+                'account_name' => 'Pendapatan Langganan Member',
+                'account_type' => 'revenue',
+                
+
+            ],
+            [
                 'account_code' => '4201',
                 'account_name' => 'Pendapatan Jasa',
                 'account_type' => 'revenue',

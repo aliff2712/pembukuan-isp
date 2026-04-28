@@ -39,6 +39,14 @@ body {
     color: #ffffff;
 }
 
+.summary-number.text-success {
+    color: #10b981;
+}
+
+.summary-number.text-warning {
+    color: #f59e0b;
+}
+
 .filter-card {
     background: #1e293b;
     border-radius: 18px;
@@ -161,6 +169,38 @@ body {
     font-size: 12px;
 }
 
+.badge-journalized {
+    background: #10b981;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+}
+
+.badge-not-journalized {
+    background: #6b7280;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+}
+
+.btn-secondary:disabled {
+    background: #6b7280;
+    border-color: #6b7280;
+    color: #ffffff;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.btn-secondary:disabled:hover {
+    background: #6b7280;
+    border-color: #6b7280;
+    color: #ffffff;
+}
+
 .admin-badge {
     background: #1e3a5f;
     border: 1px solid rgba(59,130,246,0.3);
@@ -277,13 +317,13 @@ body {
 
 {{-- SUMMARY --}}
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="summary-card text-center">
             <small>Total Transaksi Tersimpan</small>
             <div class="summary-number">{{ $totalTransaksi }}</div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="summary-card text-center">
             <small>Total Nominal</small>
             <div class="summary-number">
@@ -291,10 +331,20 @@ body {
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="summary-card text-center">
-            <small>Total Admin Penagih</small>
-            <div class="summary-number">{{ $perAdmin->count() }}</div>
+            <small>Sudah Dijurnalkan</small>
+            <div class="summary-number text-success">
+                {{ \App\Models\SinkronTransaksi::where('is_journalized', true)->count() }}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="summary-card text-center">
+            <small>Belum Dijurnalkan</small>
+            <div class="summary-number text-warning">
+                {{ \App\Models\SinkronTransaksi::where('is_journalized', false)->count() }}
+            </div>
         </div>
     </div>
 </div>
@@ -480,7 +530,7 @@ body {
             {{-- DELETE SECTION --}}
             <div class="col-md-4">
                 <form method="POST" action="{{ route('sinkron.deleteTransaksi') }}" 
-                      onsubmit="return confirm('Apakah Anda yakin ingin menghapus semua data transaksi untuk bulan ini?\n\nData yang sudah dijurnal tidak akan dihapus.');"
+                      onsubmit="return confirm('Apakah Anda yakin ingin menghapus semua data transaksi untuk bulan ini?\n\nData yang sudah dijurnal akan TIDAK dihapus (terlindungi).');"
                       class="h-100">
                     @csrf
                     @method('DELETE')
@@ -489,7 +539,7 @@ body {
                         <div class="mb-3 flex-grow-1">
                             <input type="month" name="bulan" value="{{ now()->format('Y-m') }}"
                                 class="form-control form-control-sm" required>
-                            <small class="text-muted d-block mt-1">Hapus per bulan tagihan</small>
+                            <small class="text-muted d-block mt-1">Hapus per bulan tagihan (otomatis amankan yang sudah dijurnal)</small>
                         </div>
                         <button type="submit" class="btn btn-danger w-100 btn-sm">
                             <i class="fas fa-trash-alt me-1"></i> Hapus Bulan Ini
@@ -523,7 +573,8 @@ body {
                         <th>Dibayar Oleh</th>
                         <th>Bulan Tagihan</th>
                         <th>Tanggal Bayar</th>
-                        <th class="text-center">Status</th>
+                        <th class="text-center">Status Bayar</th>
+                        <th class="text-center">Status Jurnal</th>
                         <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
@@ -560,18 +611,36 @@ body {
                             </span>
                         </td>
                         <td class="text-center">
-                            <form method="POST" action="{{ route('sinkron.deleteTransaksiById', $trx->id) }}" class="d-inline" onsubmit="return confirm('Hapus transaksi {{ $trx->nama_pelanggan }}?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger" title="Hapus record ini">
-                                    <i class="fas fa-trash"></i>
+                            @if($trx->is_journalized)
+                                <span class="badge badge-journalized" 
+                                      title="Dijurnalkan: {{ $trx->journalized_at ? $trx->journalized_at->format('d M Y H:i') : 'N/A' }}">
+                                    <i class="fas fa-check me-1"></i> JURNAL
+                                </span>
+                            @else
+                                <span class="badge badge-not-journalized" title="Belum dijurnalkan">
+                                    <i class="fas fa-clock me-1"></i> PENDING
+                                </span>
+                            @endif
+                        </td>
+                        <td class="text-center">
+                            @if($trx->is_journalized)
+                                <button type="button" class="btn btn-sm btn-secondary" disabled title="Tidak dapat menghapus transaksi yang sudah dijurnalkan">
+                                    <i class="fas fa-lock"></i>
                                 </button>
-                            </form>
+                            @else
+                                <form method="POST" action="{{ route('sinkron.deleteTransaksiById', $trx->id) }}" class="d-inline" onsubmit="return confirm('Hapus transaksi {{ $trx->nama_pelanggan }}?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Hapus record ini">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="10" class="text-center py-4 text-white">
+                        <td colspan="11" class="text-center py-4 text-white">
                             Belum ada data. Silakan import atau ubah filter.
                         </td>
                     </tr>

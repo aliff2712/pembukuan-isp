@@ -58,7 +58,7 @@
     <div class="sidebar-heading">Billing ISP</div>
 
     <!-- SINKRON TRANSAKSI -->
-    <li class="nav-item {{ request()->routeIs('sinkron.index') ? 'active' : '' }}">
+    <li class="nav-item {{ request()->routeIs('sinkron.transaksi.index') ? 'active' : '' }}">
         <a class="nav-link" href="{{ route('sinkron.index') }}">
             <i class="fas fa-sync-alt"></i>
             <span>Sinkron Transaksi</span>
@@ -66,20 +66,20 @@
     </li>
 
     <!-- SINKRON PELANGGAN -->
-    <li class="nav-item {{ request()->routeIs('sinkron.pelanggan') ? 'active' : '' }}">
-        <a class="nav-link" href="{{ route('sinkron.pelanggan') }}">
+    <li class="nav-item {{ request()->routeIs('sinkron.pelanggan.index') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('sinkron.pelanggan.index') }}">
             <i class="fas fa-users"></i>
             <span>Daftar Pelanggan</span>
         </a>
     </li>
         
         <!-- SINKRON PELANGGAN -->
-    <li class="nav-item {{ request()->routeIs('sinkron.belum-bayar') ? 'active' : '' }}">
-        <a class="nav-link" href="{{ route('sinkron.belum-bayar') }}">
+    {{-- <li class="nav-item {{ request()->routeIs('sinkron.pelanggan.belum-bayar.index') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('sinkron.pelanggan.belum-bayar.index') }}">
             <i class="fas fa-users"></i>
             <span>Daftar Pelanggan Belum bayar</span>
         </a>
-    </li>
+    </li> --}}
 
     <hr class="sidebar-divider">
 

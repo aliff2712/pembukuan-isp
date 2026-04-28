@@ -1,4 +1,3 @@
-
 <?php
 
 use App\Http\Controllers\ChartOfAccountController;
@@ -12,8 +11,10 @@ use App\Http\Controllers\MikhmonImportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\VoucherSaleController;
+use App\Http\Controllers\BelumBayarController;
+use App\Http\Controllers\PelangganController;
+use App\Http\Controllers\SinkronTransaksiController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\SinkronImportController;
 
 // =====================================================================
 // PUBLIC ROUTES
@@ -110,7 +111,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('/{transaksi}/payment',  [TransaksiController::class, 'processPayment'])->name('payment.process');
         Route::delete('/{transaksi}',         [TransaksiController::class, 'destroy'])->name('destroy');
         Route::get('/{transaksi}/receipt',    [TransaksiController::class, 'receipt'])->name('receipt');
-        Route::get('/{transaksi}',            [TransaksiController::class, 'show'])->name('show'); // paling bawah
+        Route::get('/{transaksi}',            [TransaksiController::class, 'show'])->name('show');
     });
 
     // -----------------------------------------------------------------
@@ -141,59 +142,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/converter', [FileConvertController::class, 'convert'])->name('converter.convert');
 
     // -----------------------------------------------------------------
-   // -----------------------------------------------------------------
     // SINKRON BILLING - TRANSAKSI
     // -----------------------------------------------------------------
-    Route::get('/pembukuan/sinkron',         [SinkronImportController::class, 'index'])->name('sinkron.index');
-    Route::post('/pembukuan/sinkron/import', [SinkronImportController::class, 'import'])
-        ->middleware('throttle:sinkron')
-        ->name('sinkron.import');
-    Route::get('/pembukuan/sinkron/export',  [SinkronImportController::class, 'exportTransaksi'])
-        ->middleware('throttle:60,1')
-        ->name('sinkron.export');
-    Route::delete('/pembukuan/sinkron/delete', [SinkronImportController::class, 'deleteTransaksi'])
-        ->middleware('throttle:sinkron')
-        ->name('sinkron.deleteTransaksi');
-    Route::delete('/pembukuan/sinkron/{id}', [SinkronImportController::class, 'deleteTransaksiById'])
-        ->middleware('throttle:sinkron')
-        ->name('sinkron.deleteTransaksiById');
-    
+    Route::prefix('pembukuan/sinkron')->name('sinkron.')->group(function () {
+        Route::get('/',        [SinkronTransaksiController::class, 'index'])->name('index');
+        Route::post('/import', [SinkronTransaksiController::class, 'import'])->middleware('throttle:sinkron')->name('import');
+        Route::get('/export',  [SinkronTransaksiController::class, 'export'])->middleware('throttle:60,1')->name('export');
+        Route::delete('/delete',   [SinkronTransaksiController::class, 'delete'])->middleware('throttle:sinkron')->name('deleteTransaksi');
+        Route::delete('/{id}', [SinkronTransaksiController::class, 'deleteById'])->middleware('throttle:sinkron')->name('deleteTransaksiById');
+    }); 
+
     // -----------------------------------------------------------------
     // SINKRON BILLING - PELANGGAN
     // -----------------------------------------------------------------
-    Route::get('/pembukuan/pelanggan',            [SinkronImportController::class, 'pelanggan'])->name('sinkron.pelanggan');
-    Route::post('/pembukuan/pelanggan/import',    [SinkronImportController::class, 'importPelanggan'])
-        ->middleware('throttle:sinkron')
-        ->name('sinkron.pelanggan.import');
-    Route::get('/pembukuan/pelanggan/export',     [SinkronImportController::class, 'exportPelanggan'])
-        ->middleware('throttle:60,1')
-        ->name('sinkron.pelanggan.export');
-    Route::delete('/pembukuan/pelanggan/delete', [SinkronImportController::class, 'deletePelanggan'])
-        ->middleware('throttle:sinkron')
-        ->name('sinkron.deletePelanggan');
-    Route::delete('/pembukuan/pelanggan/{id}', [SinkronImportController::class, 'deletePelangganById'])
-        ->middleware('throttle:sinkron')
-        ->name('sinkron.deletePelangganById');
-        
-       // -----------------------------------------------------------------
+    Route::prefix('pembukuan/pelanggan')->name('sinkron.pelanggan.')->group(function () {
+        Route::get('/',        [PelangganController::class, 'index'])->name('index');
+        Route::post('/import', [PelangganController::class, 'import'])->middleware('throttle:sinkron')->name('import');
+        Route::get('/export',  [PelangganController::class, 'export'])->middleware('throttle:60,1')->name('export');
+        Route::delete('/delete',   [PelangganController::class, 'delete'])->middleware('throttle:sinkron')->name('delete');
+        Route::delete('/{id}', [PelangganController::class, 'deleteById'])->middleware('throttle:sinkron')->name('deleteById');
+    });
+
+    // -----------------------------------------------------------------
     // SINKRON BILLING - BELUM BAYAR
     // -----------------------------------------------------------------
-    Route::get('/pembukuan/belum-bayar', 
-        [SinkronImportController::class, 'belumBayar']
-    )->name('sinkron.belum-bayar');
-    
-    Route::post('/pembukuan/belum-bayar/import', 
-        [SinkronImportController::class, 'importBelumBayar']
-    )->middleware('throttle:sinkron')
-     ->name('sinkron.belum-bayar.import');
-     
-    Route::delete('/pembukuan/belum-bayar/delete', 
-        [SinkronImportController::class, 'deleteBelumBayar']
-    )->middleware('throttle:sinkron')
-     ->name('sinkron.deleteBelumBayar');
-    Route::delete('/pembukuan/belum-bayar/{id}', 
-        [SinkronImportController::class, 'deleteBelumBayarById']
-    )->middleware('throttle:sinkron')
-     ->name('sinkron.deleteBelumBayarById');
+    Route::prefix('pembukuan/belum-bayar')->name('sinkron.belum-bayar.')->group(function () {
+        Route::get('/',        [BelumBayarController::class, 'index'])->name('index');
+        Route::post('/import', [BelumBayarController::class, 'import'])->middleware('throttle:sinkron')->name('import');
+        Route::delete('/delete',   [BelumBayarController::class, 'delete'])->middleware('throttle:sinkron')->name('delete');
+        Route::delete('/{id}', [BelumBayarController::class, 'deleteById'])->middleware('throttle:sinkron')->name('deleteById');
+    });
 
 }); // end middleware auth + verified

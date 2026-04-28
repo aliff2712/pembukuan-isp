@@ -20,10 +20,21 @@ class SinkronTransaksi extends Model
         'bulan_tagihan',
         'tanggal_bayar',
         'status',
+        'is_journalized',
+        'journalized_at',
+        'is_locked'
     ];
 
     protected $casts = [
         'tanggal_bayar' => 'datetime',
         'jumlah'        => 'decimal:2',
+        'is_journalized' => 'boolean',
+        'journalized_at' => 'datetime',
+        'is_locked' => 'boolean',
     ];
+    public function shouldBeLocked(): bool
+{
+    return $this->created_at->diffInMinutes(now()) >= 10;
+}
+
 }
