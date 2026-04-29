@@ -270,11 +270,11 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">
+                            <td colspan="7" class="text-center  py-4">
                                 <i class="fas fa-inbox fa-3x mb-3"></i>
-                                <p>No expense records found.</p>
+                                <p>tidak ada pengeluaran yang ditemukan.</p>
                                 <a href="{{ route('expenses.create') }}" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-plus"></i> Add First Expense
+                                    <i class="fas fa-plus"></i> Tambah pengeluaran pertama Anda
                                 </a>
                             </td>
                         </tr>

@@ -50,6 +50,34 @@ class SinkronTransaksiController extends Controller
             });
         }
 
+        // Export URL dengan filter aktif (dipakai tombol export di blade)
+        $exportUrl = route('sinkron.export') . '?' . http_build_query(
+            array_filter([
+                'search'       => $request->search,
+                'bulan_filter' => $request->bulan_filter,
+                'area'         => $request->area,
+                'metode'       => $request->metode,
+                'dibayar_oleh' => $request->dibayar_oleh,
+            ])
+        );
+
+        // Clone query sebelum paginate — dipakai untuk hitung total hasil filter
+        // (clone wajib karena paginate() memodifikasi builder in-place)
+        $filteredSummary = (clone $query)->selectRaw("
+            COUNT(*)                 AS total_filtered,
+            COALESCE(SUM(jumlah), 0) AS nominal_filtered
+        ")->first();
+
+        $totalFiltered   = (int) $filteredSummary->total_filtered;
+        $nominalFiltered = (float) $filteredSummary->nominal_filtered;
+        $isFiltered      = collect([
+            $request->search,
+            $request->bulan_filter,
+            $request->area,
+            $request->metode,
+            $request->dibayar_oleh,
+        ])->filter()->isNotEmpty();
+
         $transaksi = $query->paginate(20)->withQueryString();
 
         // Auto lock saat load
@@ -57,8 +85,18 @@ class SinkronTransaksiController extends Controller
             $this->service->autoLock($trx);
         });
 
-        $totalNominal   = SinkronTransaksi::sum('jumlah');
-        $totalTransaksi = SinkronTransaksi::count();
+        // 4 query summary digabung jadi 1 round-trip ke DB
+        $summary = SinkronTransaksi::selectRaw("
+            COUNT(*)                                    AS total_transaksi,
+            COALESCE(SUM(jumlah), 0)                    AS total_nominal,
+            SUM(CASE WHEN is_journalized = 1 THEN 1 ELSE 0 END) AS sudah_dijurnalkan,
+            SUM(CASE WHEN is_journalized = 0 THEN 1 ELSE 0 END) AS belum_dijurnalkan
+        ")->first();
+
+        $totalTransaksi   = (int) $summary->total_transaksi;
+        $totalNominal     = (float) $summary->total_nominal;
+        $sudahDijurnalkan = (int) $summary->sudah_dijurnalkan;
+        $belumDijurnalkan = (int) $summary->belum_dijurnalkan;
 
         $perAdmin = SinkronTransaksi::selectRaw(
             'dibayar_oleh, COUNT(*) as jumlah_transaksi, SUM(jumlah) as total_nominal'
@@ -69,13 +107,24 @@ class SinkronTransaksiController extends Controller
         $adminList  = SinkronTransaksi::distinct()->orderBy('dibayar_oleh')->pluck('dibayar_oleh');
 
         return view('pembukuan.sinkron', compact(
-            'transaksi', 'totalNominal', 'totalTransaksi', 'perAdmin',
-            'areaList', 'metodeList', 'adminList'
+            'transaksi',
+            'totalTransaksi',
+            'totalNominal',
+            'sudahDijurnalkan',
+            'belumDijurnalkan',
+            'totalFiltered',
+            'nominalFiltered',
+            'isFiltered',
+            'perAdmin',
+            'areaList',
+            'metodeList',
+            'adminList',
+            'exportUrl',
         ));
     }
 
     // =========================================================
-    // IMPORT — sekarang lewat staging dulu, bukan langsung jurnal
+    // IMPORT
     // =========================================================
     public function import(Request $request)
     {
@@ -110,17 +159,16 @@ class SinkronTransaksiController extends Controller
             return back()->with('error', 'Maksimal 1000 data per import.');
         }
 
-        // Alihkan ke PaymentImportService → masuk staging dulu
         $importService = new PaymentImportService();
         $summary       = $importService->process($transaksis);
 
-        $message = "Import selesai: {$summary['total_approved']} approved";
+        $message   = "Import selesai: {$summary['total_approved']} approved";
+        $flashType = 'success';
 
         if ($summary['total_flagged'] > 0) {
-            $message .= " | ⚠️ {$summary['total_flagged']} flagged — perlu review manual";
+            $message   .= " | ⚠️ {$summary['total_flagged']} flagged — perlu review manual";
+            $flashType  = 'warning';
         }
-
-        $flashType = $summary['total_flagged'] > 0 ? 'warning' : 'success';
 
         return back()->with($flashType, $message);
     }
@@ -128,45 +176,40 @@ class SinkronTransaksiController extends Controller
     // =========================================================
     // EXPORT
     // =========================================================
-   public function export(Request $request)
-{
-    $query = SinkronTransaksi::orderBy('tanggal_bayar', 'desc');
+    public function export(Request $request)
+    {
+        $query = SinkronTransaksi::orderBy('tanggal_bayar', 'desc');
 
-    // Jika export semua data, skip semua filter
-    if (!$request->boolean('all')) {
-        if ($request->filled('search')) {
-            $query->where(function($q) use ($request) {
-                $q->where('nama_pelanggan', 'like', '%' . $request->search . '%')
-                  ->orWhere('kode_pelanggan', 'like', '%' . $request->search . '%');
-            });
+        if (!$request->boolean('all')) {
+            if ($request->filled('search')) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('nama_pelanggan', 'like', '%' . $request->search . '%')
+                      ->orWhere('kode_pelanggan', 'like', '%' . $request->search . '%');
+                });
+            }
+            if ($request->filled('bulan_filter')) {
+                $query->where('bulan_tagihan', 'like', $request->bulan_filter . '%');
+            }
+            if ($request->filled('area')) {
+                $query->where('area', $request->area);
+            }
+            if ($request->filled('metode')) {
+                $query->where('metode', $request->metode);
+            }
+            if ($request->filled('dibayar_oleh')) {
+                $query->where('dibayar_oleh', $request->dibayar_oleh);
+            }
         }
 
-        if ($request->filled('bulan_filter')) {
-            $query->where('bulan_tagihan', 'like', $request->bulan_filter . '%');
-        }
+        $data   = $query->get();
+        $suffix = $request->boolean('all') ? 'non-filter' : 'filter';
 
-        if ($request->filled('area')) {
-            $query->where('area', $request->area);
-        }
-
-        if ($request->filled('metode')) {
-            $query->where('metode', $request->metode);
-        }
-
-        if ($request->filled('dibayar_oleh')) {
-            $query->where('dibayar_oleh', $request->dibayar_oleh);
-        }
+        return Excel::download(
+            new TransaksiExport($data),
+            'transaksi_per_tanggal' . $suffix . '_' . now()->format('Y_m_d') . '.xlsx'
+        );
     }
 
-    $data = $query->get();
-
-    $suffix = $request->boolean('all') ? 'semua' : 'filter';
-
-    return Excel::download(
-        new TransaksiExport($data),
-        'transaksi_' . $suffix . '_' . now()->format('Y_m_d') . '.xlsx'
-    );
-}
     // =========================================================
     // DELETE BULK
     // =========================================================
@@ -176,15 +219,19 @@ class SinkronTransaksiController extends Controller
             'bulan' => ['required', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
         ]);
 
-        $rows = SinkronTransaksi::where('bulan_tagihan', 'like', $request->bulan . '%')->get();
-
-        $lockedCount = $rows->filter(fn($trx) => $this->service->isLocked($trx))->count();
+        // Cek jumlah baris terkunci langsung di DB — tidak perlu load seluruh collection ke PHP
+        $lockedCount = SinkronTransaksi::where('bulan_tagihan', 'like', $request->bulan . '%')
+            ->where('is_journalized', true)
+            ->count();
 
         if ($lockedCount > 0) {
             return back()->with('error', "{$lockedCount} data sudah terkunci.");
         }
 
-        SinkronTransaksi::where('bulan_tagihan', 'like', $request->bulan . '%')->delete();
+        // Hapus hanya yang belum dijurnalkan (double safety — cegah race condition)
+        SinkronTransaksi::where('bulan_tagihan', 'like', $request->bulan . '%')
+            ->where('is_journalized', false)
+            ->delete();
 
         return back()->with('success', 'Data berhasil dihapus.');
     }

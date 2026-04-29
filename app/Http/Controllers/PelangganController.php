@@ -139,7 +139,7 @@ class PelangganController extends Controller
         ]);
 
         $pelanggan = SinkronPelanggan::orderBy('nama')->get();
-        $filename  = 'pelanggan_' . now()->format('Y_m_d') . '.xlsx';
+        $filename  = 'pelangganPerTanggal_' . now()->format('Y_m_d') . '.xlsx';
 
         return Excel::download(new PelangganExport($pelanggan), $filename);
     }
