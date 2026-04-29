@@ -30,10 +30,14 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'telegram' => [
+    'token'   => env('TELEGRAM_BOT_TOKEN'),
+    'chat_id' => env('TELEGRAM_ADMIN_CHAT_ID'),
+    ],
     'billing' => [
     'url' => env('BILLING_URL'),
     'key' => env('BILLING_KEY'),
     'verify_ssl' => env('BILLING_VERIFY_SSL', true), 
-],
+    ],
 
 ];

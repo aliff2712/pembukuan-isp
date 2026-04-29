@@ -5,12 +5,11 @@ namespace App\Http\Controllers;
 use App\Exports\TransaksiExport;
 use App\Models\SinkronTransaksi;
 use App\Services\BillingApiService;
-use App\Services\SinkronJournalizeService;
+use App\Services\PaymentImportService;
 use App\Services\SinkronTransaksiService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -53,7 +52,7 @@ class SinkronTransaksiController extends Controller
 
         $transaksi = $query->paginate(20)->withQueryString();
 
-        // 🔥 AUTO LOCK saat load
+        // Auto lock saat load
         $transaksi->getCollection()->each(function ($trx) {
             $this->service->autoLock($trx);
         });
@@ -76,7 +75,7 @@ class SinkronTransaksiController extends Controller
     }
 
     // =========================================================
-    // IMPORT
+    // IMPORT — sekarang lewat staging dulu, bukan langsung jurnal
     // =========================================================
     public function import(Request $request)
     {
@@ -111,77 +110,63 @@ class SinkronTransaksiController extends Controller
             return back()->with('error', 'Maksimal 1000 data per import.');
         }
 
-        $imported = 0;
-        $skipped  = 0;
-        $warned   = 0;
+        // Alihkan ke PaymentImportService → masuk staging dulu
+        $importService = new PaymentImportService();
+        $summary       = $importService->process($transaksis);
 
-        $allowedStatus = ['lunas'];
-        $allowedMetode = ['cash', 'transfer', 'online', 'qris'];
+        $message = "Import selesai: {$summary['total_approved']} approved";
 
-        $journalizer = new SinkronJournalizeService();
-
-        foreach ($transaksis as $trx) {
-
-            if (!$this->service->validate($trx)) {
-                $skipped++;
-                continue;
-            }
-
-            $existing = SinkronTransaksi::where('id_transaksi_billing', $trx['id_transaksi'])->first();
-
-            if ($existing && $this->service->shouldSkipUpdate($existing, $trx)) {
-                $warned++;
-                continue;
-            }
-
-            $result = SinkronTransaksi::updateOrCreate(
-                ['id_transaksi_billing' => (int) $trx['id_transaksi']],
-                $this->service->map($trx, $allowedMetode, $allowedStatus)
-            );
-
-            $result->wasRecentlyCreated ? $imported++ : $skipped++;
-
-            $result->refresh();
-
-            // 🔥 AUTO JOURNAL
-            if (!$result->is_journalized) {
-                $journalizer->journalize($result);
-            }
-
-            // 🔒 AUTO LOCK
-            $this->service->autoLock($result);
+        if ($summary['total_flagged'] > 0) {
+            $message .= " | ⚠️ {$summary['total_flagged']} flagged — perlu review manual";
         }
 
-        $summary = $journalizer->getSummary();
+        $flashType = $summary['total_flagged'] > 0 ? 'warning' : 'success';
 
-        $message  = "Import: {$imported} baru, {$skipped} skip";
-        $message .= " | Jurnal: {$summary['created']} dibuat";
-        if ($warned > 0) {
-            $message .= " | ⚠️ {$warned} berubah setelah jurnal";
-        }
-
-        return back()->with('success', $message);
+        return back()->with($flashType, $message);
     }
 
     // =========================================================
     // EXPORT
     // =========================================================
-    public function export(Request $request)
-    {
-        $query = SinkronTransaksi::orderBy('tanggal_bayar', 'desc');
+   public function export(Request $request)
+{
+    $query = SinkronTransaksi::orderBy('tanggal_bayar', 'desc');
+
+    // Jika export semua data, skip semua filter
+    if (!$request->boolean('all')) {
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('nama_pelanggan', 'like', '%' . $request->search . '%')
+                  ->orWhere('kode_pelanggan', 'like', '%' . $request->search . '%');
+            });
+        }
 
         if ($request->filled('bulan_filter')) {
             $query->where('bulan_tagihan', 'like', $request->bulan_filter . '%');
         }
 
-        $data = $query->get();
+        if ($request->filled('area')) {
+            $query->where('area', $request->area);
+        }
 
-        return Excel::download(
-            new TransaksiExport($data),
-            'transaksi_' . now()->format('Y_m_d') . '.xlsx'
-        );
+        if ($request->filled('metode')) {
+            $query->where('metode', $request->metode);
+        }
+
+        if ($request->filled('dibayar_oleh')) {
+            $query->where('dibayar_oleh', $request->dibayar_oleh);
+        }
     }
 
+    $data = $query->get();
+
+    $suffix = $request->boolean('all') ? 'semua' : 'filter';
+
+    return Excel::download(
+        new TransaksiExport($data),
+        'transaksi_' . $suffix . '_' . now()->format('Y_m_d') . '.xlsx'
+    );
+}
     // =========================================================
     // DELETE BULK
     // =========================================================

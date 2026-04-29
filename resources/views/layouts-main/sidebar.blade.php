@@ -65,6 +65,18 @@
         </a>
     </li>
 
+<!-- PAYMENT STAGING -->
+<li class="nav-item {{ request()->routeIs('pembukuan.staging.*') ? 'active' : '' }}">
+    <a class="nav-link" href="{{ route('pembukuan.staging.index') }}">
+        <i class="fas fa-clipboard-check"></i>
+        <span>Review Import</span>
+        @php $totalFlagged = \App\Models\PaymentStaging::where('status', 'flagged')->count(); @endphp
+        @if($totalFlagged > 0)
+            <span class="badge bg-danger ms-1">{{ $totalFlagged }}</span>
+        @endif
+    </a>
+</li>
+
     <!-- SINKRON PELANGGAN -->
     <li class="nav-item {{ request()->routeIs('sinkron.pelanggan.index') ? 'active' : '' }}">
         <a class="nav-link" href="{{ route('sinkron.pelanggan.index') }}">

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BelumBayarController;
 use App\Http\Controllers\ChartOfAccountController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
@@ -8,12 +9,12 @@ use App\Http\Controllers\Finance\FinanceSettingController;
 use App\Http\Controllers\JournalEntryController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\MikhmonImportController;
+use App\Http\Controllers\PaymentStagingController;
+use App\Http\Controllers\PelangganController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SinkronTransaksiController;
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\VoucherSaleController;
-use App\Http\Controllers\BelumBayarController;
-use App\Http\Controllers\PelangganController;
-use App\Http\Controllers\SinkronTransaksiController;
 use Illuminate\Support\Facades\Route;
 
 // =====================================================================
@@ -172,5 +173,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/delete',   [BelumBayarController::class, 'delete'])->middleware('throttle:sinkron')->name('delete');
         Route::delete('/{id}', [BelumBayarController::class, 'deleteById'])->middleware('throttle:sinkron')->name('deleteById');
     });
+    // -----------------------------------------------------------------
+Route::prefix('pembukuan/staging')->name('pembukuan.staging.')->group(function () {
+    Route::get('/',               [PaymentStagingController::class, 'index'])->name('index');
+    Route::post('/journalize',    [PaymentStagingController::class, 'journalizeApproved'])->name('journalize');
 
-}); // end middleware auth + verified
+    // BULK harus di atas /{paymentStaging}
+    Route::post('/bulk-approve',  [PaymentStagingController::class, 'bulkApprove'])->name('bulk-approve');
+    Route::post('/bulk-reject',   [PaymentStagingController::class, 'bulkReject'])->name('bulk-reject');
+
+    // Single record — paling bawah
+    Route::get('/{paymentStaging}',          [PaymentStagingController::class, 'show'])->name('show');
+    Route::get('/{paymentStaging}/edit',     [PaymentStagingController::class, 'edit'])->name('edit');
+    Route::put('/{paymentStaging}',          [PaymentStagingController::class, 'update'])->name('update');
+    Route::post('/{paymentStaging}/approve', [PaymentStagingController::class, 'approve'])->name('approve');
+    Route::post('/{paymentStaging}/reject',  [PaymentStagingController::class, 'reject'])->name('reject');
+});
+
+}); 
