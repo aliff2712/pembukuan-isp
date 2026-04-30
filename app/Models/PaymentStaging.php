@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\JournalEntry;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 
@@ -13,8 +14,9 @@ class PaymentStaging extends Model
         'source_ref', 'kode_transaksi', 'nama_pelanggan', 'jumlah',
         'tanggal_bayar', 'area', 'paket', 'metode', 'dibayar_oleh',
         'bulan_tagihan', 'raw_data', 'status', 'flag_reason',
-        'is_journalized', 'journalized_at', 'is_locked', 'locked_at',
-        'reviewed_by', 'reviewed_at', 'approved_by', 'approved_at',
+        'duplicate_of', 'is_journalized', 'journalized_at',
+        'is_locked', 'locked_at', 'reviewed_by', 'reviewed_at',
+        'approved_by', 'approved_at',
     ];
 
     protected $casts = [
@@ -29,6 +31,8 @@ class PaymentStaging extends Model
         'raw_data'       => 'json',
     ];
 
+    private const FINAL_STATUSES = ['approved', 'rejected'];
+
     // =========================================================
     // Relations
     // =========================================================
@@ -40,24 +44,39 @@ class PaymentStaging extends Model
     // Scopes
     // =========================================================
 
-    public function scopePending($q)  { return $q->where('status', 'pending'); }
-    public function scopeApproved($q) { return $q->where('status', 'approved'); }
-    public function scopeFlagged($q)  { return $q->where('status', 'flagged'); }
-    public function scopeRejected($q) { return $q->where('status', 'rejected'); }
-    public function scopeNotLocked($q){ return $q->where('is_locked', false); }
+    public function scopePending($q)   { return $q->where('status', 'pending'); }
+    public function scopeApproved($q)  { return $q->where('status', 'approved'); }
+    public function scopeFlagged($q)   { return $q->where('status', 'flagged'); }
+    public function scopeRejected($q)  { return $q->where('status', 'rejected'); }
+    public function scopeDuplicate($q) { return $q->where('status', 'duplicate'); }
+    public function scopeNotLocked($q) { return $q->where('is_locked', false); }
 
     // =========================================================
-    // Methods
+    // State Helpers
     // =========================================================
+
+    public function isFinal(): bool
+    {
+        return in_array($this->status, self::FINAL_STATUSES);
+    }
+
+    public function isActionable(): bool
+    {
+        return !$this->is_locked && !$this->isFinal();
+    }
 
     public function shouldBeLocked(): bool
     {
         return $this->created_at->diffInMinutes(now()) >= 10;
     }
 
+    // =========================================================
+    // Methods
+    // =========================================================
+
     public function approve(int $userId = null): bool
     {
-        if ($this->is_locked) return false;
+        if ($this->is_locked || $this->isFinal()) return false;
 
         $this->update([
             'status'      => 'approved',
@@ -70,19 +89,20 @@ class PaymentStaging extends Model
 
     public function reject(int $userId = null): void
     {
-        // Hapus jurnal terkait jika belum locked
         if ($this->is_journalized && !$this->is_locked) {
             JournalEntry::where('source_type', 'sinkron_billing')
                 ->whereIn('source_id', fn($q) =>
                     $q->select('id')->from('sinkron_transaksi')
                       ->where('id_transaksi_billing', $this->source_ref)
                 )
-                ->delete(); // journal_lines ikut terhapus via cascade
+                ->delete();
 
             SinkronTransaksi::where('id_transaksi_billing', $this->source_ref)
                 ->update(['is_journalized' => false, 'journalized_at' => null]);
 
-            Log::info('PaymentStaging: Jurnal dihapus saat reject', ['source_ref' => $this->source_ref]);
+            Log::info('PaymentStaging: Jurnal dihapus saat reject', [
+                'source_ref' => $this->source_ref,
+            ]);
         }
 
         $this->update([
@@ -96,6 +116,15 @@ class PaymentStaging extends Model
     public function flag(string $reason): void
     {
         $this->update(['status' => 'flagged', 'flag_reason' => $reason]);
+    }
+
+    public function markAsDuplicate(string $existingRef): void
+    {
+        $this->update([
+            'status'       => 'duplicate',
+            'duplicate_of' => $existingRef,
+            'flag_reason'  => null,
+        ]);
     }
 
     public function lock(): void

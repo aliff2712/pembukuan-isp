@@ -162,12 +162,27 @@ class SinkronTransaksiController extends Controller
         $importService = new PaymentImportService();
         $summary       = $importService->process($transaksis);
 
-        $message   = "Import selesai: {$summary['total_approved']} approved";
-        $flashType = 'success';
-
+        $msgParts = [];
+        if ($summary['total_approved'] > 0) {
+            $msgParts[] = "{$summary['total_approved']} baru & di-approve";
+        }
         if ($summary['total_flagged'] > 0) {
-            $message   .= " | ⚠️ {$summary['total_flagged']} flagged — perlu review manual";
-            $flashType  = 'warning';
+            $msgParts[] = "⚠️ {$summary['total_flagged']} flagged (perlu review)";
+        }
+        if ($summary['total_duplicate'] > 0) {
+            $msgParts[] = "{$summary['total_duplicate']} duplikat (dilewati)";
+        }
+        if ($summary['total_skipped'] > 0) {
+            $msgParts[] = "{$summary['total_skipped']} tidak valid (dilewati)";
+        }
+
+        $message = empty($msgParts) ? "Tidak ada data yang diproses." : "Hasil Import: " . implode(" | ", $msgParts);
+
+        $flashType = 'success';
+        if ($summary['total_flagged'] > 0) {
+            $flashType = 'warning';
+        } elseif ($summary['total_approved'] == 0 && $summary['total_duplicate'] > 0) {
+            $flashType = 'info';
         }
 
         return back()->with($flashType, $message);

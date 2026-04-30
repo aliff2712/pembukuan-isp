@@ -92,6 +92,8 @@ body { background: #0f172a; }
 
 .alert-success-navy { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #86efac; border-radius: 12px; padding: 12px 16px; }
 .alert-error-navy   { background: rgba(220,38,38,0.15);  border: 1px solid rgba(220,38,38,0.3);  color: #fca5a5; border-radius: 12px; padding: 12px 16px; }
+.alert-warning-navy { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d; border-radius: 12px; padding: 12px 16px; }
+.alert-info-navy    { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd; border-radius: 12px; padding: 12px 16px; }
 
 .filter-active-badge {
     background: rgba(59,130,246,0.15);
@@ -126,6 +128,16 @@ body { background: #0f172a; }
 @if(session('error'))
     <div class="alert-error-navy mb-4">
         <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+    </div>
+@endif
+@if(session('warning'))
+    <div class="alert-warning-navy mb-4">
+        <i class="fas fa-exclamation-triangle me-2"></i>{{ session('warning') }}
+    </div>
+@endif
+@if(session('info'))
+    <div class="alert-info-navy mb-4">
+        <i class="fas fa-info-circle me-2"></i>{{ session('info') }}
     </div>
 @endif
 

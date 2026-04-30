@@ -22,7 +22,14 @@ class SinkronTransaksi extends Model
         'status',
         'is_journalized',
         'journalized_at',
-        'is_locked'
+        'is_locked',
+        'status_approval',
+        'flag_reason',
+        'raw_data',
+        'reviewed_by',
+        'reviewed_at',
+        'approved_by',
+        'approved_at',
     ];
 
     protected $casts = [
@@ -31,10 +38,39 @@ class SinkronTransaksi extends Model
         'is_journalized' => 'boolean',
         'journalized_at' => 'datetime',
         'is_locked' => 'boolean',
+        'raw_data' => 'array',
+        'reviewed_at' => 'datetime',
+        'approved_at' => 'datetime',
     ];
     public function shouldBeLocked(): bool
-{
-    return $this->created_at->diffInMinutes(now()) >= 10;
-}
+    {
+        return $this->created_at->diffInMinutes(now()) >= 10;
+    }
+
+    // Scopes
+    public function scopePending($query)   { return $query->where('status_approval', 'pending'); }
+    public function scopeApproved($query)  { return $query->where('status_approval', 'approved'); }
+    public function scopeFlagged($query)   { return $query->where('status_approval', 'flagged'); }
+    public function scopeRejected($query)  { return $query->where('status_approval', 'rejected'); }
+
+    // Helpers
+    public function isFinal(): bool
+    {
+        return in_array($this->status_approval, ['approved', 'rejected']);
+    }
+
+    public function isActionable(): bool
+    {
+        return !$this->isFinal() && !$this->is_locked;
+    }
+
+    public function reject(int $userId): void
+    {
+        $this->update([
+            'status_approval' => 'rejected',
+            'reviewed_by'     => $userId,
+            'reviewed_at'     => now(),
+        ]);
+    }
 
 }

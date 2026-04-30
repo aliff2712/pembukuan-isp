@@ -78,13 +78,13 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Status</label>
                             <p>
-                                @if($paymentStaging->status === 'pending')
+                                @if($paymentStaging->status_approval === 'pending')
                                     <span class="badge bg-secondary">Pending</span>
-                                @elseif($paymentStaging->status === 'approved')
+                                @elseif($paymentStaging->status_approval === 'approved')
                                     <span class="badge bg-success">Approved</span>
-                                @elseif($paymentStaging->status === 'flagged')
+                                @elseif($paymentStaging->status_approval === 'flagged')
                                     <span class="badge bg-danger">Flagged</span>
-                                @elseif($paymentStaging->status === 'rejected')
+                                @elseif($paymentStaging->status_approval === 'rejected')
                                     <span class="badge bg-dark">Rejected</span>
                                 @endif
                             </p>

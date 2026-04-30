@@ -2,258 +2,182 @@
 
 namespace App\Services;
 
-use App\Models\PaymentStaging;
-use App\Models\SinkronPelanggan;
 use App\Models\SinkronTransaksi;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
-/**
- * PaymentImportService
- *
- * Alur: API → Validasi → Staging
- *   - Lolos validasi → status approved → auto jurnal langsung
- *   - Gagal validasi → status flagged → tunggu review manual
- */
 class PaymentImportService
 {
-    private const NOMINAL_MAX = 500000;
-    private const NOMINAL_MIN = 1;
+    private const ALLOWED_METODE = ['cash', 'transfer', 'qris', 'online'];
+    private const ALLOWED_STATUS = ['lunas'];
+    private const FLAG_AMOUNT_LIMIT = 10_000_000;
 
-    private int $totalProcessed = 0;
     private int $totalApproved  = 0;
     private int $totalFlagged   = 0;
-    private int $totalJournalized = 0;
-    private array $flaggedReasons = [];
+    private int $totalDuplicate = 0;
+    private int $totalSkipped   = 0;
 
     // =========================================================
     // MAIN
     // =========================================================
 
-    public function process(array $transactions): array
+    public function process(array $transaksis): array
     {
-        $this->totalProcessed   = 0;
-        $this->totalApproved    = 0;
-        $this->totalFlagged     = 0;
-        $this->totalJournalized = 0;
-        $this->flaggedReasons   = [];
+        foreach ($transaksis as $trx) {
+            $result = $this->processSingle($trx);
 
-        foreach ($transactions as $trx) {
-            $this->processOne($trx);
-        }
-
-        // Kirim notif Telegram jika ada yang flagged
-        if ($this->totalFlagged > 0) {
-            try {
-                (new TelegramNotificationService())->sendFlaggedAlert(
-                    $this->totalFlagged,
-                    $this->flaggedReasons
-                );
-            } catch (\Exception $e) {
-                Log::error('PaymentImport: Gagal kirim notif Telegram', ['message' => $e->getMessage()]);
-            }
+            match ($result) {
+                'approved'  => $this->totalApproved++,
+                'flagged'   => $this->totalFlagged++,
+                'duplicate' => $this->totalDuplicate++,
+                'skipped'   => $this->totalSkipped++,
+            };
         }
 
         return $this->getSummary();
     }
 
     // =========================================================
-    // Process single transaction
+    // SINGLE PROCESS
     // =========================================================
 
-    private function processOne(array $trx): void
+    private function processSingle(array $trx): string
     {
-        $this->totalProcessed++;
-
-        // STEP 1: Field wajib
-        $requiredFields = ['id_transaksi', 'kode_transaksi', 'nama_pelanggan', 'jumlah', 'tanggal_bayar'];
-        $missing = array_filter($requiredFields, fn($f) => !isset($trx[$f]) || $trx[$f] === '' || $trx[$f] === null);
-        if (!empty($missing)) {
-            $this->flagTransaction($trx, 'Field wajib tidak lengkap: ' . implode(', ', $missing));
-            return;
+        // 1. Validasi field wajib
+        if (!$this->validate($trx)) {
+            Log::warning('PaymentImport: data tidak valid, skip', [
+                'trx' => $trx,
+            ]);
+            return 'skipped';
         }
 
-        // STEP 2: Nominal
-        if (!is_numeric($trx['jumlah'])) {
-            $this->flagTransaction($trx, 'Jumlah harus berupa angka');
-            return;
-        }
-        $jumlah = (float) $trx['jumlah'];
-        if ($jumlah < self::NOMINAL_MIN) {
-            $this->flagTransaction($trx, 'Jumlah harus lebih dari 0');
-            return;
-        }
-        if ($jumlah > self::NOMINAL_MAX) {
-            $this->flagTransaction($trx, 'Jumlah melebihi batas maksimal (Rp ' . number_format(self::NOMINAL_MAX, 0, ',', '.') . ')');
-            return;
-        }
+        $sourceRef = (int) $trx['id_transaksi'];
 
-        // STEP 3: Tanggal
-        try {
-            $tanggal = Carbon::parse($trx['tanggal_bayar']);
-        } catch (\Exception $e) {
-            $this->flagTransaction($trx, 'Format tanggal tidak valid: ' . $trx['tanggal_bayar']);
-            return;
-        }
-        if ($tanggal->isFuture()) {
-            $this->flagTransaction($trx, 'Tanggal tidak boleh di masa depan');
-            return;
-        }
+        // 2. Cek duplicate di sinkron_transaksi
+        $existing = SinkronTransaksi::where('id_transaksi_billing', $sourceRef)->first();
 
-        // STEP 4: Duplikat
-        $existing = PaymentStaging::where('source_ref', $trx['id_transaksi'])
-            ->whereIn('status', ['pending', 'approved', 'flagged'])
-            ->first();
         if ($existing) {
-            $this->flagTransaction($trx, 'Data sudah ada di staging (status: ' . $existing->status . ')');
-            return;
-        }
-        if (PaymentStaging::where('source_ref', $trx['id_transaksi'])->where('status', 'rejected')->exists()) {
-            $this->flagTransaction($trx, 'Data pernah di-reject sebelumnya');
-            return;
+            Log::info('PaymentImport: duplicate di sinkron_transaksi', [
+                'source_ref' => $sourceRef,
+            ]);
+            return 'duplicate';
         }
 
-        // STEP 5: Pelanggan
-        if (!SinkronPelanggan::where('nama', $trx['nama_pelanggan'])->exists()) {
-            $this->flagTransaction($trx, 'Pelanggan "' . $trx['nama_pelanggan'] . '" tidak ditemukan');
-            return;
+        // 3. Deteksi anomali bisnis → flagged
+        $flagReason = $this->detectFlag($trx);
+
+        if ($flagReason) {
+            $this->createTransaksi($trx, 'flagged', $flagReason);
+            return 'flagged';
         }
 
-        // STEP 6: Semua lolos → approve & langsung jurnal
-        $staging = $this->approveTransaction($trx);
+        // 4. Aman → otomatis approved & dijurnal (Straight-Through Processing)
+        $newTrx = $this->createTransaksi($trx, 'approved');
+        
+        // Jurnal Otomatis
+        $journalizer = new SinkronJournalizeService();
+        $journalizer->journalize($newTrx);
 
-        if ($staging) {
-            $this->journalizeStaging($staging);
-        }
+        return 'approved';
     }
 
     // =========================================================
-    // Flag transaction
+    // CREATE TRANSAKSI
     // =========================================================
 
-    private function flagTransaction(array $trx, string $reason): void
+    private function createTransaksi(array $trx, string $statusApproval, ?string $flagReason = null): SinkronTransaksi
     {
-        $sourceRef = $trx['id_transaksi'] ?? 'unknown';
+        return SinkronTransaksi::create([
+            'id_transaksi_billing' => (int) $trx['id_transaksi'],
+            'kode_transaksi' => (string) substr($trx['kode_transaksi'] ?? '', 0, 50),
+            'nama_pelanggan' => (string) substr($trx['nama_pelanggan'] ?? '', 0, 150),
+            'jumlah'         => (float) $trx['jumlah'],
+            'tanggal_bayar'  => $trx['tanggal_bayar'],
+            'area'           => $trx['area'] ?? null,
+            'paket'          => $trx['paket'] ?? null,
+            'metode'         => in_array($trx['metode'] ?? '', self::ALLOWED_METODE) ? $trx['metode'] : 'cash',
+            'dibayar_oleh'   => $trx['dibayar_oleh'] ?? null,
+            'bulan_tagihan'  => $trx['bulan_tagihan'] ?? null,
+            'status'         => 'lunas',
+            'status_approval'=> $statusApproval,
+            'flag_reason'    => $flagReason,
+            'raw_data'       => $trx,
+            'approved_at'    => $statusApproval === 'approved' ? now() : null,
+        ]);
+    }
 
-        PaymentStaging::updateOrCreate(
-            ['source_ref' => $sourceRef],
-            [
-                'kode_transaksi' => (string) substr($trx['kode_transaksi'] ?? '', 0, 50),
-                'nama_pelanggan' => (string) substr($trx['nama_pelanggan'] ?? '', 0, 150),
-                'jumlah'         => isset($trx['jumlah']) ? (float) $trx['jumlah'] : 0,
-                'tanggal_bayar'  => $trx['tanggal_bayar'] ?? null,
-                'area'           => isset($trx['area'])         ? (string) substr($trx['area'], 0, 100) : null,
-                'paket'          => isset($trx['paket'])        ? (string) substr($trx['paket'], 0, 100) : null,
-                'metode'         => isset($trx['metode'])       ? (string) substr($trx['metode'], 0, 50) : null,
-                'dibayar_oleh'   => isset($trx['dibayar_oleh']) ? (string) substr($trx['dibayar_oleh'], 0, 100) : null,
-                'bulan_tagihan'  => isset($trx['bulan_tagihan']) ? (string) $trx['bulan_tagihan'] : null,
-                'raw_data'       => $trx,
-                'status'         => 'flagged',
-                'flag_reason'    => $reason,
-            ]
-        );
+    // =========================================================
+    // DETEKSI ANOMALI BISNIS
+    // =========================================================
 
-        $this->totalFlagged++;
-        $this->flaggedReasons[] = [
-            'source_ref' => $sourceRef,
-            'nama'       => $trx['nama_pelanggan'] ?? 'N/A',
-            'reason'     => $reason,
+    private function detectFlag(array $trx): ?string
+    {
+        if ((float) $trx['jumlah'] <= 0) {
+            return 'Jumlah tidak valid: ' . $trx['jumlah'];
+        }
+
+        if ((float) $trx['jumlah'] > self::FLAG_AMOUNT_LIMIT) {
+            return 'Jumlah melebihi batas wajar (> Rp ' .
+                number_format(self::FLAG_AMOUNT_LIMIT, 0, ',', '.') . ')';
+        }
+
+        if (!in_array($trx['metode'] ?? '', self::ALLOWED_METODE)) {
+            return 'Metode pembayaran tidak dikenali: ' . ($trx['metode'] ?? '-');
+        }
+
+        if (!in_array($trx['status'] ?? '', self::ALLOWED_STATUS)) {
+            return 'Status transaksi tidak valid: ' . ($trx['status'] ?? '-');
+        }
+
+        return null;
+    }
+
+    // =========================================================
+    // VALIDASI FIELD WAJIB
+    // =========================================================
+
+    private function validate(array $trx): bool
+    {
+        $required = [
+            'id_transaksi',
+            'kode_transaksi',
+            'nama_pelanggan',
+            'jumlah',
+            'tanggal_bayar',
         ];
 
-        Log::warning('PaymentImport: Flagged', ['source_ref' => $sourceRef, 'reason' => $reason]);
-    }
-
-    // =========================================================
-    // Approve transaction → return PaymentStaging instance
-    // =========================================================
-
-    private function approveTransaction(array $trx): ?PaymentStaging
-    {
-        $sourceRef = $trx['id_transaksi'];
-
-        $staging = PaymentStaging::updateOrCreate(
-            ['source_ref' => $sourceRef],
-            [
-                'kode_transaksi' => (string) substr($trx['kode_transaksi'] ?? '', 0, 50),
-                'nama_pelanggan' => (string) substr($trx['nama_pelanggan'] ?? '', 0, 150),
-                'jumlah'         => (float) $trx['jumlah'],
-                'tanggal_bayar'  => $trx['tanggal_bayar'],
-                'area'           => isset($trx['area'])         ? (string) substr($trx['area'], 0, 100) : null,
-                'paket'          => isset($trx['paket'])        ? (string) substr($trx['paket'], 0, 100) : null,
-                'metode'         => isset($trx['metode'])       ? (string) substr($trx['metode'], 0, 50) : null,
-                'dibayar_oleh'   => isset($trx['dibayar_oleh']) ? (string) substr($trx['dibayar_oleh'], 0, 100) : null,
-                'bulan_tagihan'  => isset($trx['bulan_tagihan']) ? (string) $trx['bulan_tagihan'] : null,
-                'raw_data'       => $trx,
-                'status'         => 'approved',
-                'flag_reason'    => null,
-            ]
-        );
-
-        $this->totalApproved++;
-        Log::info('PaymentImport: Approved', ['source_ref' => $sourceRef, 'nama' => $trx['nama_pelanggan']]);
-
-        return $staging;
-    }
-
-    // =========================================================
-    // Auto jurnal setelah approve
-    // =========================================================
-
-    private function journalizeStaging(PaymentStaging $staging): void
-    {
-        if ($staging->is_journalized) {
-            return;
-        }
-
-        try {
-            $journalizer = new SinkronJournalizeService();
-
-            $sinkronTransaksi = SinkronTransaksi::updateOrCreate(
-                ['id_transaksi_billing' => $staging->source_ref],
-                [
-                    'kode_transaksi' => $staging->kode_transaksi,
-                    'nama_pelanggan' => $staging->nama_pelanggan,
-                    'jumlah'         => $staging->jumlah,
-                    'tanggal_bayar'  => $staging->tanggal_bayar,
-                    'area'           => $staging->area,
-                    'paket'          => $staging->paket,
-                    'metode'         => $staging->metode,
-                    'dibayar_oleh'   => $staging->dibayar_oleh,
-                    'bulan_tagihan'  => $staging->bulan_tagihan,
-                    'status'         => 'lunas',
-                ]
-            );
-
-            if ($journalizer->journalize($sinkronTransaksi)) {
-                $staging->markAsJournalized();
-                $this->totalJournalized++;
-
-                if ($sinkronTransaksi->shouldBeLocked()) {
-                    $sinkronTransaksi->lock();
-                }
-
-                Log::info('PaymentImport: Auto-jurnal berhasil', ['source_ref' => $staging->source_ref]);
+        foreach ($required as $field) {
+            if (empty($trx[$field])) {
+                Log::warning("PaymentImport: field '{$field}' kosong atau tidak ada", [
+                    'trx' => $trx,
+                ]);
+                return false;
             }
-        } catch (\Exception $e) {
-            Log::error('PaymentImport: Gagal auto-jurnal', [
-                'source_ref' => $staging->source_ref,
-                'error'      => $e->getMessage(),
-            ]);
         }
+
+        if (!is_numeric($trx['jumlah'])) {
+            Log::warning('PaymentImport: jumlah bukan angka', ['jumlah' => $trx['jumlah']]);
+            return false;
+        }
+
+        if (!strtotime($trx['tanggal_bayar'])) {
+            Log::warning('PaymentImport: tanggal tidak valid', ['tanggal' => $trx['tanggal_bayar']]);
+            return false;
+        }
+
+        return true;
     }
 
     // =========================================================
-    // Summary
+    // SUMMARY
     // =========================================================
 
     public function getSummary(): array
     {
         return [
-            'total_processed'   => $this->totalProcessed,
-            'total_approved'    => $this->totalApproved,
-            'total_journalized' => $this->totalJournalized,
-            'total_flagged'     => $this->totalFlagged,
-            'flagged_reasons'   => $this->flaggedReasons,
+            'total_approved'  => $this->totalApproved,
+            'total_flagged'   => $this->totalFlagged,
+            'total_duplicate' => $this->totalDuplicate,
+            'total_skipped'   => $this->totalSkipped,
         ];
     }
 }
