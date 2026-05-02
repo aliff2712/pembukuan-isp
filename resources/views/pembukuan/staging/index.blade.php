@@ -100,7 +100,7 @@
                     </thead>
 
                     <tbody>
-                            @foreach($stagedData as $d)
+                         q   @foreach($stagedData as $d)
                 @php
                     $isFlagged   = $d->status_approval === 'flagged';
                     $isDuplicate = $d->status_approval === 'duplicate';
