@@ -1,0 +1,72 @@
+
+
+/* MODAL */
+#exportModal .modal-content{
+    border-radius:14px;
+    border:none;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+
+/* TITLE */
+#exportModal h5{
+    color:#0b2a4a;
+    font-weight:600;
+}
+
+/* SPINNER */
+.spinner-border{
+    color:#0b2a4a;
+}
+
+/* PROGRESS CONTAINER */
+.progress{
+    height:22px;
+    border-radius:30px;
+    background:#e9edf2;
+}
+
+/* PROGRESS BAR CERAH */
+.progress-bar{
+    background:linear-gradient(90deg,#38bdf8,#0ea5e9);
+    font-weight:600;
+    font-size:13px;
+}
+
+/* TEXT */
+#progressText{
+    font-size:14px;
+    color:#0b2a4a;
+}
+.text-primary-white{
+    color:#ffffff;
+}
+/* Filter Input Navy */
+.card-body .form-control{
+    background:#0f172a !important;   /* navy */
+    border:1px solid #334155 !important;
+    color:#ffffff !important;
+    border-radius:10px;
+}
+
+/* Focus */
+.card-body .form-control:focus{
+    background:#0f172a !important;
+    color:#fff !important;
+    border-color:#3b82f6 !important;
+    box-shadow:0 0 0 0.15rem rgba(59,130,246,.25);
+}
+
+/* Select dropdown */
+.card-body select{
+    background:#0f172a !important;
+    color:#fff !important;
+}
+
+/* Label biar kontras */
+.card-body label{
+    color:#e2e8f0;
+}
+.card-header{
+    background-color:#0f172a !important; /* sedikit lebih gelap dari body */
+    color:#ffffff !important;
+}

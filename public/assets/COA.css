@@ -1,0 +1,126 @@
+/* ===============================
+   FILTER & FORM
+================================= */
+
+.filter-card .btn{
+    height: 38px;
+    min-width: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 8px;
+}
+
+.filter-input
+{
+    height: 36px;
+    background-color: #0f172a;
+    color: #e5e7eb;
+    border: 1px solid #1e293b;
+}
+.filter-input::placeholder
+{
+    color: #94a3b8;
+}
+.filter-input:focus{
+    background-color: #0f172a;
+    color: #e5e7eb;
+    border-color: #2e59d9;
+    box-shadow: none;
+}
+/* SEARCH NAVY */
+.form-control {
+    background-color: #0f172a; /* navy */
+    color: #ffffff; /* text putih */
+    border: 1px solid #1e293b;
+}
+
+/* placeholder */
+.form-control::placeholder {
+    color: #94a3b8;
+}
+
+/* saat di klik */
+.form-control:focus {
+    background-color: #0f172a;
+    color: #ffffff;
+    border-color: #2e59d9;
+    box-shadow: none;
+}
+/* ===============================
+   ACTION BUTTONS
+================================= */
+
+.action-buttons .btn{
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.action-buttons .btn:hover{
+    transform: translateY(-2px);
+}
+
+/* ===============================
+   BORDER COLORS
+================================= */
+
+.border-left-primary{ border-left: 4px solid #4e73df; }
+.border-left-info{ border-left: 4px solid #36b9cc; }
+.border-left-warning{ border-left: 4px solid #f6c23e; }
+.border-left-success{ border-left: 4px solid #1cc88a; }
+.border-left-danger{ border-left: 4px solid #e74a3b; }
+
+/* ===============================
+   TEXT STYLES
+================================= */
+
+.text-gray-800{ color: #2e59d9; }
+.text-gray-300{ color: #e3e6f0; }
+
+.font-weight-bold{ font-weight: 700; }
+.text-xs{ font-size: 0.8rem; }
+.text-uppercase{ text-transform: uppercase; }
+.text-primary-white{ color: #ffffff; }
+
+/* ===============================
+   BUTTON GREY
+================================= */
+
+.btn-grey{
+    background-color: #6c757d;
+    color: #fff;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.btn-grey:hover{
+    background-color: #5c636a;
+    color: #fff;
+}
+
+.btn-grey:active{
+    background-color: #ffffff !important;
+    color: #6c757d !important;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* ===============================
+   SWEET ALERT
+================================= */
+
+.swal2-popup{
+    background-color: #0f172a !important;
+    color: #e5e7eb;
+    border: 1px solid #1e293b;
+}
+.card-header{
+    background-color:#0f172a !important; /* sedikit lebih gelap dari body */
+    color:#ffffff !important;
+}
