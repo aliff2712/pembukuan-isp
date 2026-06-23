@@ -52,7 +52,7 @@ class LaporanSummarySheet implements FromArray, WithTitle, WithStyles, WithColum
         [''],
         ['RINGKASAN PENDAPATAN'],
         ['Sumber', 'Nominal'],
-        ['Sinkron Transaksi', $sinkron],
+        ['Transaksi Member',  $sinkron],
         ['Voucher',           $voucher],
         ['Other Income',      $other],
         [''],

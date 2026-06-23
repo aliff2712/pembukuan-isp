@@ -159,34 +159,39 @@ class SinkronTransaksiController extends Controller
             return back()->with('error', 'Maksimal 1000 data per import.');
         }
 
-        $importService = new PaymentImportService();
-        $summary       = $importService->process($transaksis);
+      
+    $importService = new PaymentImportService();
+    $summary       = $importService->process($transaksis);
 
-        $msgParts = [];
-        if ($summary['total_approved'] > 0) {
-            $msgParts[] = "{$summary['total_approved']} baru & di-approve";
-        }
-        if ($summary['total_flagged'] > 0) {
-            $msgParts[] = "⚠️ {$summary['total_flagged']} flagged (perlu review)";
-        }
-        if ($summary['total_duplicate'] > 0) {
-            $msgParts[] = "{$summary['total_duplicate']} duplikat (dilewati)";
-        }
-        if ($summary['total_skipped'] > 0) {
-            $msgParts[] = "{$summary['total_skipped']} tidak valid (dilewati)";
-        }
-
-        $message = empty($msgParts) ? "Tidak ada data yang diproses." : "Hasil Import: " . implode(" | ", $msgParts);
-
-        $flashType = 'success';
-        if ($summary['total_flagged'] > 0) {
-            $flashType = 'warning';
-        } elseif ($summary['total_approved'] == 0 && $summary['total_duplicate'] > 0) {
-            $flashType = 'info';
-        }
-
-        return back()->with($flashType, $message);
+    $msgParts = [];
+    if ($summary['total_approved'] > 0) {
+        $msgParts[] = "{$summary['total_approved']} baru & di-approve";
     }
+    if ($summary['total_approved_unjournalized'] > 0) {
+        $msgParts[] = "⚠️ {$summary['total_approved_unjournalized']} approved tapi GAGAL dijurnal (cek log)";
+    }
+    if ($summary['total_flagged'] > 0) {
+        $msgParts[] = "⚠️ {$summary['total_flagged']} flagged (perlu review)";
+    }
+    if ($summary['total_duplicate'] > 0) {
+        $msgParts[] = "{$summary['total_duplicate']} duplikat (dilewati)";
+    }
+    if ($summary['total_skipped'] > 0) {
+        $msgParts[] = "{$summary['total_skipped']} tidak valid (dilewati)";
+    }
+
+    $message = empty($msgParts) ? "Tidak ada data yang diproses." : "Hasil Import: " . implode(" | ", $msgParts);
+
+    $flashType = 'success';
+    if ($summary['total_flagged'] > 0 || $summary['total_approved_unjournalized'] > 0) {
+        $flashType = 'warning';
+    } elseif ($summary['total_approved'] == 0 && $summary['total_duplicate'] > 0) {
+        $flashType = 'info';
+    }
+
+    return back()->with($flashType, $message);
+}
+
 
     // =========================================================
     // EXPORT

@@ -12,23 +12,11 @@
         <div class="col-md-3">
             <div class="card bg-success text-white shadow-sm">
                 <div class="card-body">
-                    <small>Member Bayar</small>
+                    <small>Transaksi Member</small>
                     <h5 class="fw-bold">
-                        Rp {{ number_format($summary['memberPaid'],0,',','.') }}
+                        Rp {{ number_format($summary['memberTotal'],0,',','.') }}
                     </h5>
-                    <small>{{ $summary['memberPaidCount'] }} transaksi</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card bg-warning text-dark shadow-sm">
-                <div class="card-body">
-                    <small>Member Belum bayar</small>
-                    <h5 class="fw-bold">
-                        Rp {{ number_format($summary['memberUnpaid'],0,',','.') }}
-                    </h5>
-                    <small>{{ $summary['memberUnpaidCount'] }} transaksi</small>
+                    <small>{{ $summary['memberCount'] }} transaksi</small>
                 </div>
             </div>
         </div>
@@ -101,16 +89,15 @@
 
                     @foreach($transaksis as $t)
                         <tr>
-                            <td>{{ $t->tanggal->format('d M Y') }}</td>
-                            <td>Member</td>
-                            <td>{{ $t->nama_customer }}</td>
+                            <td>{{ \Carbon\Carbon::parse($t->tanggal_bayar)->format('d M Y') }}</td>
+                            <td>Transaksi Member</td>
+                            <td>{{ $t->nama_pelanggan }}</td>
                             <td>
-                                <span class="badge 
-                                    {{ $t->status == 'paid' ? 'bg-success' : 'bg-warning' }}">
-                                    {{ ucfirst($t->status) }}
+                                <span class="badge bg-info">
+                                    {{ $t->metode ?? '-' }}
                                 </span>
                             </td>
-                            <td>Rp {{ number_format($t->total,0,',','.') }}</td>
+                            <td>Rp {{ number_format($t->jumlah,0,',','.') }}</td>
                         </tr>
                     @endforeach
 

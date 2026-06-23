@@ -21,16 +21,14 @@ class LaporanController extends Controller
 
     private function getSummaryBulanan(int $bulan, int $tahun): array
     {
-        $member = Transaksi::selectRaw("
-                status,
-                SUM(total) as total,
-                COUNT(*)   as jumlah
+        // FIX: Transaksi Member dari sinkron_transaksi (BUKAN dari Transaksi model)
+        $member = SinkronTransaksi::selectRaw("
+                SUM(jumlah) as total,
+                COUNT(*)    as jumlah
             ")
-            ->whereMonth('tanggal', $bulan)
-            ->whereYear('tanggal', $tahun)
-            ->groupBy('status')
-            ->get()
-            ->keyBy('status');
+            ->whereMonth('tanggal_bayar', $bulan)
+            ->whereYear('tanggal_bayar', $tahun)
+            ->first();
 
         $voucher = DailyVoucherSale::selectRaw("
                 SUM(total_amount)       as total,
@@ -56,38 +54,23 @@ class LaporanController extends Controller
             ->whereYear('expense_date', $tahun)
             ->first();
 
-        // Pendapatan dari billing API
-        $billing = SinkronTransaksi::selectRaw("
-                SUM(jumlah) as total,
-                COUNT(*) as jumlah
-            ")
-            ->whereMonth('tanggal_bayar', $bulan)
-            ->whereYear('tanggal_bayar', $tahun)
-            ->first();
-
-        $paid             = $member['paid']->total   ?? 0;
-        $unpaid           = $member['unpaid']->total ?? 0;
-        $v                = $voucher->total          ?? 0;
-        $o                = $other->total            ?? 0;
-        $b                = $billing->total          ?? 0;
-        $totalPengeluaran = $expense->total          ?? 0;
-        $totalPendapatan  = $paid + $v + $o + $b;
+        $m                = $member->total            ?? 0;
+        $v                = $voucher->total           ?? 0;
+        $o                = $other->total             ?? 0;
+        $totalPengeluaran = $expense->total           ?? 0;
+        $totalPendapatan  = $m + $v + $o;
 
         return [
-            'memberPaid'        => $paid,
-            'memberUnpaid'      => $unpaid,
-            'memberPaidCount'   => $member['paid']->jumlah   ?? 0,
-            'memberUnpaidCount' => $member['unpaid']->jumlah ?? 0,
-            'voucherTotal'      => $v,
-            'voucherTransaksi'  => $voucher->transaksi       ?? 0,
-            'otherTotal'        => $o,
-            'otherCount'        => $other->jumlah            ?? 0,
-            'billingTotal'      => $b,
-            'billingCount'      => $billing->jumlah          ?? 0,
-            'totalPendapatan'   => $totalPendapatan,
-            'totalPengeluaran'  => $totalPengeluaran,
-            'expenseCount'      => $expense->jumlah          ?? 0,
-            'labaKotor'         => $totalPendapatan - $totalPengeluaran,
+            'memberTotal'      => $m,
+            'memberCount'      => (int) ($member->jumlah ?? 0),
+            'voucherTotal'     => $v,
+            'voucherTransaksi' => (int) ($voucher->transaksi ?? 0),
+            'otherTotal'       => $o,
+            'otherCount'       => (int) ($other->jumlah ?? 0),
+            'totalPendapatan'  => $totalPendapatan,
+            'totalPengeluaran' => $totalPengeluaran,
+            'expenseCount'     => (int) ($expense->jumlah ?? 0),
+            'labaKotor'        => $totalPendapatan - $totalPengeluaran,
         ];
     }
 
@@ -99,12 +82,13 @@ class LaporanController extends Controller
 
     private function getBulananData(int $bulan, int $tahun): array
     {
-        $transaksis = Transaksi::select(
-                'kode_transaksi', 'nama_customer', 'tanggal', 'total', 'status', 'paid_at'
+        // FIX: Menggunakan SinkronTransaksi sebagai sumber data transaksi
+        $transaksis = SinkronTransaksi::select(
+                'kode_transaksi', 'nama_pelanggan', 'tanggal_bayar', 'jumlah', 'metode', 'area', 'paket', 'status'
             )
-            ->whereMonth('tanggal', $bulan)
-            ->whereYear('tanggal', $tahun)
-            ->latest('tanggal')
+            ->whereMonth('tanggal_bayar', $bulan)
+            ->whereYear('tanggal_bayar', $tahun)
+            ->latest('tanggal_bayar')
             ->get();
 
         $vouchers = DailyVoucherSale::select(
@@ -144,25 +128,14 @@ class LaporanController extends Controller
 
     private function getTahunanAggregates(int $tahun): array
     {
-        $memberPaid = Transaksi::selectRaw("
-                MONTH(tanggal) as bulan,
-                SUM(total)     as total,
-                COUNT(*)       as jumlah
+        // FIX: Transaksi Member dari sinkron_transaksi (BUKAN dari Transaksi model)
+        $member = SinkronTransaksi::selectRaw("
+                MONTH(tanggal_bayar) as bulan,
+                SUM(jumlah)          as total,
+                COUNT(*)             as jumlah
             ")
-            ->whereYear('tanggal', $tahun)
-            ->where('status', 'paid')
-            ->groupByRaw('MONTH(tanggal)')
-            ->get()
-            ->keyBy('bulan');
-
-        $memberUnpaid = Transaksi::selectRaw("
-                MONTH(tanggal) as bulan,
-                SUM(total)     as total,
-                COUNT(*)       as jumlah
-            ")
-            ->whereYear('tanggal', $tahun)
-            ->where('status', 'unpaid')
-            ->groupByRaw('MONTH(tanggal)')
+            ->whereYear('tanggal_bayar', $tahun)
+            ->groupByRaw('MONTH(tanggal_bayar)')
             ->get()
             ->keyBy('bulan');
 
@@ -196,45 +169,30 @@ class LaporanController extends Controller
             ->get()
             ->keyBy('bulan');
 
-        // Billing API per bulan
-        $billing = SinkronTransaksi::selectRaw("
-                MONTH(tanggal_bayar) as bulan,
-                SUM(jumlah)          as total,
-                COUNT(*)             as jumlah
-            ")
-            ->whereYear('tanggal_bayar', $tahun)
-            ->groupByRaw('MONTH(tanggal_bayar)')
-            ->get()
-            ->keyBy('bulan');
-
-        return [$memberPaid, $memberUnpaid, $voucher, $other, $expense, $billing];
+        return [$member, $voucher, $other, $expense];
     }
 
     // =========================================================
     // HELPER: Build array perBulan dari hasil aggregat
     // =========================================================
 
-    private function buildPerBulan(int $tahun, $memberPaid, $memberUnpaid, $voucher, $other, $expense, $billing): array
+    private function buildPerBulan(int $tahun, $member, $voucher, $other, $expense): array
     {
         $perBulan = [];
 
         for ($i = 1; $i <= 12; $i++) {
-            $paid            = $memberPaid[$i]->total   ?? 0;
-            $unpaid          = $memberUnpaid[$i]->total ?? 0;
-            $v               = $voucher[$i]->total      ?? 0;
-            $o               = $other[$i]->total        ?? 0;
-            $e               = $expense[$i]->total      ?? 0;
-            $b               = $billing[$i]->total      ?? 0;
-            $totalPendapatan = $paid + $v + $o + $b;
+            $m               = $member[$i]->total      ?? 0;
+            $v               = $voucher[$i]->total     ?? 0;
+            $o               = $other[$i]->total       ?? 0;
+            $e               = $expense[$i]->total     ?? 0;
+            $totalPendapatan = $m + $v + $o;
 
             $perBulan[] = [
                 'bulan'         => Carbon::create($tahun, $i)->translatedFormat('F'),
                 'bulan_num'     => $i,
-                'member_paid'   => $paid,
-                'member_unpaid' => $unpaid,
+                'member'        => $m,
                 'voucher'       => $v,
                 'other'         => $o,
-                'billing'       => $b,
                 'total'         => $totalPendapatan,
                 'pengeluaran'   => $e,
                 'laba_kotor'    => $totalPendapatan - $e,
@@ -248,27 +206,22 @@ class LaporanController extends Controller
     // HELPER: Build summary tahunan dari hasil aggregat
     // =========================================================
 
-    private function buildSummaryTahunan($memberPaid, $memberUnpaid, $voucher, $other, $expense, $billing): array
+    private function buildSummaryTahunan($member, $voucher, $other, $expense): array
     {
-        $totalPendapatan  = $memberPaid->sum('total') + $voucher->sum('total')
-                         + $other->sum('total') + $billing->sum('total');
+        $totalPendapatan  = $member->sum('total') + $voucher->sum('total') + $other->sum('total');
         $totalPengeluaran = $expense->sum('total');
 
         return [
-            'memberPaid'        => $memberPaid->sum('total'),
-            'memberUnpaid'      => $memberUnpaid->sum('total'),
-            'memberPaidCount'   => $memberPaid->sum('jumlah'),
-            'memberUnpaidCount' => $memberUnpaid->sum('jumlah'),
-            'voucherTotal'      => $voucher->sum('total'),
-            'voucherTransaksi'  => $voucher->sum('transaksi'),
-            'otherTotal'        => $other->sum('total'),
-            'otherCount'        => $other->sum('jumlah'),
-            'billingTotal'      => $billing->sum('total'),
-            'billingCount'      => $billing->sum('jumlah'),
-            'totalPendapatan'   => $totalPendapatan,
-            'totalPengeluaran'  => $totalPengeluaran,
-            'expenseCount'      => $expense->sum('jumlah'),
-            'labaKotor'         => $totalPendapatan - $totalPengeluaran,
+            'memberTotal'      => $member->sum('total'),
+            'memberCount'      => (int) $member->sum('jumlah'),
+            'voucherTotal'     => $voucher->sum('total'),
+            'voucherTransaksi' => (int) $voucher->sum('transaksi'),
+            'otherTotal'       => $other->sum('total'),
+            'otherCount'       => (int) $other->sum('jumlah'),
+            'totalPendapatan'  => $totalPendapatan,
+            'totalPengeluaran' => $totalPengeluaran,
+            'expenseCount'     => (int) $expense->sum('jumlah'),
+            'labaKotor'        => $totalPendapatan - $totalPengeluaran,
         ];
     }
 
@@ -313,10 +266,10 @@ class LaporanController extends Controller
     {
         $tahun = (int) ($request->tahun ?? now()->year);
 
-        [$memberPaid, $memberUnpaid, $voucher, $other, $expense, $billing] = $this->getTahunanAggregates($tahun);
+        [$member, $voucher, $other, $expense] = $this->getTahunanAggregates($tahun);
 
-        $perBulan = $this->buildPerBulan($tahun, $memberPaid, $memberUnpaid, $voucher, $other, $expense, $billing);
-        $summary  = $this->buildSummaryTahunan($memberPaid, $memberUnpaid, $voucher, $other, $expense, $billing);
+        $perBulan = $this->buildPerBulan($tahun, $member, $voucher, $other, $expense);
+        $summary  = $this->buildSummaryTahunan($member, $voucher, $other, $expense);
 
         return view('finance.laporan.tahunan', compact('summary', 'perBulan', 'tahun'));
     }

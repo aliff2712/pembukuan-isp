@@ -156,29 +156,18 @@ class PaymentStagingController extends Controller
     // BULK REJECT
     // =========================================================
 
-    public function bulkReject(Request $request)
-    {
-        $request->validate([
-            'ids'   => 'required|array|min:1',
-            'ids.*' => 'integer|exists:sinkron_transaksi,id',
-        ]);
+ public function bulkReject(Request $request, PaymentApprovalService $service)
+{
+    $request->validate([
+        'ids'   => 'required|array|min:1',
+        'ids.*' => 'integer|exists:sinkron_transaksi,id',
+    ]);
 
-        $rows = SinkronTransaksi::whereIn('id', $request->ids)
-            ->whereNotIn('status_approval', ['approved', 'rejected'])
-            ->where('is_locked', false)
-            ->get();
+    $result = $service->bulkReject($request->ids, Auth::id());
 
-        $skipped = count($request->ids) - $rows->count();
-        $success = 0;
+    $message = "Reject selesai: {$result['success']} berhasil";
+    if ($result['skipped'] > 0) $message .= " | {$result['skipped']} dilewati";
 
-        foreach ($rows as $staging) {
-            $staging->reject(Auth::id());
-            $success++;
-        }
-
-        $message = "Reject selesai: {$success} berhasil";
-        if ($skipped > 0) $message .= " | {$skipped} dilewati";
-
-        return back()->with('success', $message);
+    return back()->with('success', $message);
     }
 }

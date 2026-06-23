@@ -33,25 +33,28 @@ class SinkronTransaksi extends Model
     ];
 
     protected $casts = [
-        'tanggal_bayar' => 'datetime',
-        'jumlah'        => 'decimal:2',
-        'is_journalized' => 'boolean',
-        'journalized_at' => 'datetime',
-        'is_locked' => 'boolean',
-        'raw_data' => 'array',
-        'reviewed_at' => 'datetime',
-        'approved_at' => 'datetime',
+        'tanggal_bayar'   => 'datetime',
+        'jumlah'          => 'decimal:2',
+        'is_journalized'  => 'boolean',
+        'journalized_at'  => 'datetime',
+        'is_locked'       => 'boolean',
+        'raw_data'        => 'array',
+        'reviewed_at'     => 'datetime',
+        'approved_at'     => 'datetime',
     ];
+
+    private const GRACE_MINUTES = 10;
+
     public function shouldBeLocked(): bool
     {
-        return $this->created_at->diffInMinutes(now()) >= 10;
+        return $this->created_at->diffInMinutes(now()) >= self::GRACE_MINUTES;
     }
 
     // Scopes
-    public function scopePending($query)   { return $query->where('status_approval', 'pending'); }
-    public function scopeApproved($query)  { return $query->where('status_approval', 'approved'); }
-    public function scopeFlagged($query)   { return $query->where('status_approval', 'flagged'); }
-    public function scopeRejected($query)  { return $query->where('status_approval', 'rejected'); }
+    public function scopePending($query)  { return $query->where('status_approval', 'pending'); }
+    public function scopeApproved($query) { return $query->where('status_approval', 'approved'); }
+    public function scopeFlagged($query)  { return $query->where('status_approval', 'flagged'); }
+    public function scopeRejected($query) { return $query->where('status_approval', 'rejected'); }
 
     // Helpers
     public function isFinal(): bool
@@ -61,7 +64,9 @@ class SinkronTransaksi extends Model
 
     public function isActionable(): bool
     {
-        return !$this->isFinal() && !$this->is_locked;
+        // Sekarang mencakup shouldBeLocked() -- tidak lagi bergantung
+        // pada apakah autoLock() pernah terpanggil sebelumnya
+        return !$this->isFinal() && !$this->is_locked && !$this->shouldBeLocked();
     }
 
     public function reject(int $userId): void
@@ -72,5 +77,4 @@ class SinkronTransaksi extends Model
             'reviewed_at'     => now(),
         ]);
     }
-
 }

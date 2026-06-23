@@ -94,4 +94,22 @@ class PaymentApprovalService
 
         return compact('success', 'failed', 'skipped');
     }
+        public function bulkReject(array $ids, int $userId): array
+    {
+        $rows = SinkronTransaksi::whereIn('id', $ids)
+            ->whereNotIn('status_approval', ['approved', 'rejected'])
+            ->where('is_locked', false)
+            ->get()
+            ->filter(fn($trx) => !$trx->shouldBeLocked());
+
+        $skipped = count($ids) - $rows->count();
+        $success = 0;
+
+        foreach ($rows as $trx) {
+            $trx->reject($userId);
+            $success++;
+        }
+
+        return compact('success', 'skipped');
+    }
 }

@@ -7,14 +7,23 @@ use Illuminate\Support\Facades\Log;
 
 class PaymentImportService
 {
-    private const ALLOWED_METODE = ['cash', 'transfer', 'qris', 'online'];
-    private const ALLOWED_STATUS = ['lunas'];
+    private const ALLOWED_METODE    = ['cash', 'transfer', 'qris', 'online'];
+    private const ALLOWED_STATUS    = ['lunas'];
     private const FLAG_AMOUNT_LIMIT = 10_000_000;
 
-    private int $totalApproved  = 0;
-    private int $totalFlagged   = 0;
-    private int $totalDuplicate = 0;
-    private int $totalSkipped   = 0;
+    private int $totalApproved             = 0;
+    private int $totalApprovedUnjournalized = 0;
+    private int $totalFlagged              = 0;
+    private int $totalDuplicate            = 0;
+    private int $totalSkipped              = 0;
+
+    private SinkronJournalizeService $journalizer;
+
+    public function __construct()
+    {
+        // Instansiasi sekali di luar loop, bukan per transaksi
+        $this->journalizer = new SinkronJournalizeService();
+    }
 
     // =========================================================
     // MAIN
@@ -26,10 +35,11 @@ class PaymentImportService
             $result = $this->processSingle($trx);
 
             match ($result) {
-                'approved'  => $this->totalApproved++,
-                'flagged'   => $this->totalFlagged++,
-                'duplicate' => $this->totalDuplicate++,
-                'skipped'   => $this->totalSkipped++,
+                'approved'               => $this->totalApproved++,
+                'approved_unjournalized' => $this->totalApprovedUnjournalized++,
+                'flagged'                => $this->totalFlagged++,
+                'duplicate'              => $this->totalDuplicate++,
+                'skipped'                => $this->totalSkipped++,
             };
         }
 
@@ -42,27 +52,20 @@ class PaymentImportService
 
     private function processSingle(array $trx): string
     {
-        // 1. Validasi field wajib
         if (!$this->validate($trx)) {
-            Log::warning('PaymentImport: data tidak valid, skip', [
-                'trx' => $trx,
-            ]);
+            Log::warning('PaymentImport: data tidak valid, skip', ['trx' => $trx]);
             return 'skipped';
         }
 
         $sourceRef = (int) $trx['id_transaksi'];
 
-        // 2. Cek duplicate di sinkron_transaksi
         $existing = SinkronTransaksi::where('id_transaksi_billing', $sourceRef)->first();
 
         if ($existing) {
-            Log::info('PaymentImport: duplicate di sinkron_transaksi', [
-                'source_ref' => $sourceRef,
-            ]);
+            Log::info('PaymentImport: duplicate di sinkron_transaksi', ['source_ref' => $sourceRef]);
             return 'duplicate';
         }
 
-        // 3. Deteksi anomali bisnis → flagged
         $flagReason = $this->detectFlag($trx);
 
         if ($flagReason) {
@@ -70,12 +73,18 @@ class PaymentImportService
             return 'flagged';
         }
 
-        // 4. Aman → otomatis approved & dijurnal (Straight-Through Processing)
+        // Aman -> otomatis approved & dijurnal (Straight-Through Processing)
         $newTrx = $this->createTransaksi($trx, 'approved');
-        
-        // Jurnal Otomatis
-        $journalizer = new SinkronJournalizeService();
-        $journalizer->journalize($newTrx);
+
+        $journalResult = $this->journalizer->journalize($newTrx);
+
+        if (!in_array($journalResult, ['created', 'already_journalized'], true)) {
+            Log::error('PaymentImport: transaksi approved tapi gagal dijurnal', [
+                'trx_id' => $newTrx->id,
+                'result' => $journalResult,
+            ]);
+            return 'approved_unjournalized';
+        }
 
         return 'approved';
     }
@@ -88,20 +97,20 @@ class PaymentImportService
     {
         return SinkronTransaksi::create([
             'id_transaksi_billing' => (int) $trx['id_transaksi'],
-            'kode_transaksi' => (string) substr($trx['kode_transaksi'] ?? '', 0, 50),
-            'nama_pelanggan' => (string) substr($trx['nama_pelanggan'] ?? '', 0, 150),
-            'jumlah'         => (float) $trx['jumlah'],
-            'tanggal_bayar'  => $trx['tanggal_bayar'],
-            'area'           => $trx['area'] ?? null,
-            'paket'          => $trx['paket'] ?? null,
-            'metode'         => in_array($trx['metode'] ?? '', self::ALLOWED_METODE) ? $trx['metode'] : 'cash',
-            'dibayar_oleh'   => $trx['dibayar_oleh'] ?? null,
-            'bulan_tagihan'  => $trx['bulan_tagihan'] ?? null,
-            'status'         => 'lunas',
-            'status_approval'=> $statusApproval,
-            'flag_reason'    => $flagReason,
-            'raw_data'       => $trx,
-            'approved_at'    => $statusApproval === 'approved' ? now() : null,
+            'kode_transaksi'  => (string) substr($trx['kode_transaksi'] ?? '', 0, 50),
+            'nama_pelanggan'  => (string) substr($trx['nama_pelanggan'] ?? '', 0, 150),
+            'jumlah'          => (float) $trx['jumlah'],
+            'tanggal_bayar'   => $trx['tanggal_bayar'],
+            'area'            => $trx['area'] ?? null,
+            'paket'           => $trx['paket'] ?? null,
+            'metode'          => in_array($trx['metode'] ?? '', self::ALLOWED_METODE) ? $trx['metode'] : 'cash',
+            'dibayar_oleh'    => $trx['dibayar_oleh'] ?? null,
+            'bulan_tagihan'   => $trx['bulan_tagihan'] ?? null,
+            'status'          => 'lunas',
+            'status_approval' => $statusApproval,
+            'flag_reason'     => $flagReason,
+            'raw_data'        => $trx,
+            'approved_at'     => $statusApproval === 'approved' ? now() : null,
         ]);
     }
 
@@ -137,19 +146,11 @@ class PaymentImportService
 
     private function validate(array $trx): bool
     {
-        $required = [
-            'id_transaksi',
-            'kode_transaksi',
-            'nama_pelanggan',
-            'jumlah',
-            'tanggal_bayar',
-        ];
+        $required = ['id_transaksi', 'kode_transaksi', 'nama_pelanggan', 'jumlah', 'tanggal_bayar'];
 
         foreach ($required as $field) {
             if (empty($trx[$field])) {
-                Log::warning("PaymentImport: field '{$field}' kosong atau tidak ada", [
-                    'trx' => $trx,
-                ]);
+                Log::warning("PaymentImport: field '{$field}' kosong atau tidak ada", ['trx' => $trx]);
                 return false;
             }
         }
@@ -174,10 +175,11 @@ class PaymentImportService
     public function getSummary(): array
     {
         return [
-            'total_approved'  => $this->totalApproved,
-            'total_flagged'   => $this->totalFlagged,
-            'total_duplicate' => $this->totalDuplicate,
-            'total_skipped'   => $this->totalSkipped,
+            'total_approved'               => $this->totalApproved,
+            'total_approved_unjournalized' => $this->totalApprovedUnjournalized,
+            'total_flagged'                => $this->totalFlagged,
+            'total_duplicate'              => $this->totalDuplicate,
+            'total_skipped'                => $this->totalSkipped,
         ];
     }
 }
