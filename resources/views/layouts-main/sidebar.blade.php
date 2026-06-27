@@ -60,7 +60,7 @@
         </a>
     </li>
 
-<!-- PAYMENT STAGING -->
+{{-- <!-- PAYMENT STAGING -->
 <li class="nav-item {{ request()->routeIs('pembukuan.staging.*') ? 'active' : '' }}">
     <a class="nav-link" href="{{ route('pembukuan.staging.index') }}">
         <i class="fas fa-clipboard-check"></i>
@@ -70,7 +70,7 @@
             <span class="badge bg-danger ms-1">{{ $totalFlagged }}</span>
         @endif
     </a>
-</li>
+</li> --}}
 
     <!-- SINKRON PELANGGAN -->
     <li class="nav-item {{ request()->routeIs('sinkron.pelanggan.index') ? 'active' : '' }}">
