@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\PelangganExport;
 use App\Models\SinkronPelanggan;
 use App\Services\BillingApiService;
+use App\Services\CustomerSyncService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -15,10 +16,12 @@ use Maatwebsite\Excel\Facades\Excel;
 class PelangganController extends Controller
 {
     private BillingApiService $billing;
+    private CustomerSyncService $customerSync;
 
     public function __construct()
     {
         $this->billing = new BillingApiService();
+        $this->customerSync = new CustomerSyncService();
     }
 
     public function index(Request $request)
@@ -79,63 +82,16 @@ class PelangganController extends Controller
             return back()->with('error', 'Data terlalu banyak, maksimal 2000 per import.');
         }
 
-        $imported      = 0;
-        $skipped       = 0;
-        $allowedStatus = ['aktif', 'nonaktif'];
-
-        foreach ($pelanggans as $p) {
-
-            if (!isset($p['id'], $p['nama'])) {
-                Log::warning('SinkronImportPelanggan: field wajib tidak ada', ['p' => $p]);
-                $skipped++;
-                continue;
-            }
-
-            if (!is_numeric($p['harga_paket'] ?? 0) || !is_numeric($p['total_tagihan'] ?? 0)) {
-                $skipped++;
-                continue;
-            }
-
-            $ipAddress = null;
-            if (!empty($p['ip_address'])) {
-                $ipAddress = filter_var($p['ip_address'], FILTER_VALIDATE_IP) ? $p['ip_address'] : null;
-            }
-
-            // Validasi tanggal_register agar tidak error SQL (Incorrect date value)
-            $tanggalRegister = null;
-            if (!empty($p['tanggal_register'])) {
-                $ts = strtotime($p['tanggal_register']);
-                if ($ts !== false && date('Y', $ts) > 1000) {
-                    $tanggalRegister = date('Y-m-d', $ts);
-                }
-            }
-
-            $result = SinkronPelanggan::updateOrCreate(
-                ['id_pelanggan_billing' => (int) $p['id']],
-                [
-                    'nama'             => (string) substr($p['nama'] ?? '', 0, 150),
-                    'phone'            => isset($p['phone'])       ? (string) substr($p['phone'], 0, 20)  : null,
-                    'paket'            => isset($p['paket'])       ? (string) substr($p['paket'], 0, 100) : null,
-                    'harga_paket'      => (float) ($p['harga_paket']  ?? 0),
-                    'area'             => isset($p['area'])        ? (string) substr($p['area'], 0, 100)  : null,
-                    'ip_address'       => $ipAddress,
-                    'diskon'           => (float) ($p['diskon'] ?? 0),
-                    'total_tagihan'    => (float) ($p['total_tagihan'] ?? 0),
-                    'tanggal_register' => $tanggalRegister,
-                    'status'           => in_array($p['status'] ?? '', $allowedStatus) ? $p['status'] : 'aktif',
-                ]
-            );
-
-            $result->wasRecentlyCreated ? $imported++ : $skipped++;
-        }
+        $summary = $this->customerSync->syncFromApi($pelanggans, Auth::id());
 
         Log::info('SinkronImportPelanggan: selesai', [
-            'user'     => Auth::user()->name ?? '-',
-            'imported' => $imported,
-            'skipped'  => $skipped,
+            'user' => Auth::user()->name ?? '-',
+            'imported' => $summary['imported'],
+            'updated' => $summary['updated'],
+            'deactivated' => $summary['deactivated'],
         ]);
 
-        return back()->with('success', "Import selesai: {$imported} pelanggan baru, {$skipped} diperbarui.");
+        return back()->with('success', "Import selesai: {$summary['imported']} pelanggan baru, {$summary['updated']} diperbarui, {$summary['deactivated']} dinonaktifkan.");
     }
 
     public function export(Request $request)

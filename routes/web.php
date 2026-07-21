@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BelumBayarController;
 use App\Http\Controllers\ChartOfAccountController;
+use App\Http\Controllers\CustomerSyncMonitorController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FileConvertController;
@@ -164,15 +165,13 @@ Route::middleware(['auth', 'verified', 'admin'])->group(function () {
         Route::delete('/{id}', [PelangganController::class, 'deleteById'])->middleware('throttle:sinkron')->name('deleteById');
     });
 
+    Route::get('/pembukuan/sync-monitor', [CustomerSyncMonitorController::class, 'index'])->name('sinkron.monitor');
+    Route::post('/pembukuan/sync-monitor/sync', [CustomerSyncMonitorController::class, 'runSync'])->name('sinkron.monitor.sync');
+
     // -----------------------------------------------------------------
     // SINKRON BILLING - BELUM BAYAR
     // -----------------------------------------------------------------
-    Route::prefix('pembukuan/belum-bayar')->name('sinkron.belum-bayar.')->group(function () {
-        Route::get('/',        [BelumBayarController::class, 'index'])->name('index');
-        Route::post('/import', [BelumBayarController::class, 'import'])->middleware('throttle:sinkron')->name('import');
-        Route::delete('/delete',   [BelumBayarController::class, 'delete'])->middleware('throttle:sinkron')->name('delete');
-        Route::delete('/{id}', [BelumBayarController::class, 'deleteById'])->middleware('throttle:sinkron')->name('deleteById');
-    });
+  
     // -----------------------------------------------------------------
 Route::prefix('pembukuan/staging')->name('pembukuan.staging.')->group(function () {
     Route::get('/',               [PaymentStagingController::class, 'index'])->name('index');

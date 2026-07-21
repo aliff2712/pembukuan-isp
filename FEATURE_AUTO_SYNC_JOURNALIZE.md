@@ -227,7 +227,7 @@ Tests/Feature/SinkronJournalizeWithAuditTest.php
 
 #### 6.3 Manual Testing Checklist
 ```
-[ ] Daily sync pelanggan berjalan otomatis
+[ ] Daily sync pelanggan berjalan otomats
 [ ] is_active tracking: aktif → inactive → aktif
 [ ] Auto-journalize untuk approved transaksi
 [ ] Flagged transaksi tunggu manual review

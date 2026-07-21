@@ -41,6 +41,15 @@ class Kernel extends ConsoleKernel
         |--------------------------------------------------------------------------
         */
         $schedule->command('transaksi:update-status')->dailyAt('00:01');
+
+        /*
+        |--------------------------------------------------------------------------
+        | SYNC PELANGGAN BILLING
+        |--------------------------------------------------------------------------
+        */
+        $schedule->command('billing:sync-customers')->dailyAt('02:00')
+            ->name('sync-customers-daily')
+            ->withoutOverlapping();
     }
 
     /**

@@ -20,6 +20,7 @@ class SinkronPelanggan extends Model
         'total_tagihan',
         'tanggal_register',
         'status',
+        'is_active',
     ];
 
     protected $casts = [
@@ -27,5 +28,6 @@ class SinkronPelanggan extends Model
         'harga_paket'      => 'decimal:2',
         'diskon'           => 'decimal:2',
         'total_tagihan'    => 'decimal:2',
+        'is_active'        => 'boolean',
     ];
 }
