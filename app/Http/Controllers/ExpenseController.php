@@ -184,17 +184,19 @@ class ExpenseController extends Controller
                 JournalLine::insert([
                     [
                         'journal_entry_id' => $journalEntry->id,
-                        'account_code'     => $expenseAccount->account_code,
-                        'account_name'     => $expenseAccount->account_name,
+                        'coa_id'           => $expenseAccount->id,
                         'debit'            => $validated['amount'],
                         'credit'           => 0,
+                        'created_at'       => now(),
+                        'updated_at'       => now(),
                     ],
                     [
                         'journal_entry_id' => $journalEntry->id,
-                        'account_code'     => $cashAccount->account_code,
-                        'account_name'     => $cashAccount->account_name,
+                        'coa_id'           => $cashAccount->id,
                         'debit'            => 0,
                         'credit'           => $validated['amount'],
+                        'created_at'       => now(),
+                        'updated_at'       => now(),
                     ],
                 ]);
             }

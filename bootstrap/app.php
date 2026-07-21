@@ -20,6 +20,6 @@ $app = Application::configure(basePath: dirname(__DIR__))
     ->create();
 
 
-$app->bind('path.public', fn() => '/home/cssorid/pembukuan.css.or.id');
+$app->bind('path.public', fn() => env('APP_PUBLIC_PATH', base_path('public')));
 
 return $app;

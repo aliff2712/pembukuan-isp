@@ -39,6 +39,7 @@ class ExpenseService
                 'description'    => $data['description'] ?? 'Pengeluaran operasional',
                 'source_type'    => 'expense',
                 'source_id'      => $expense->id,
+                'reference_no'   => $expense->reference_no,
                 'total_debit'    => $data['amount'],  // ✅ TAMBAHKAN INI
                 'total_credit'   => $data['amount'],  // ✅ TAMBAHKAN INI
             ]);
